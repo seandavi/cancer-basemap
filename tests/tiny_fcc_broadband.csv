@@ -1,0 +1,13 @@
+area_data_type,geography_type,geography_id,geography_desc,geography_desc_full,total_units,biz_res,technology,speed_02_02,speed_10_1,speed_25_3,speed_100_20,speed_250_25,speed_1000_100
+Total,County,01001,Autauga County,"Autauga County, AL",27965,R,Any Technology,1.000000000,1.000000000,1.000000000,1.000000000,1.000000000,0.600107277
+Total,County,01001,Autauga County,"Autauga County, AL",27965,B,Any Technology,1.000000000,1.000000000,1.000000000,1.000000000,1.000000000,0.603361345
+Total,County,01001,Autauga County,"Autauga County, AL",27965,R,All Wired,0.969783658,0.965349544,0.961165743,0.958555337,0.957375291,0.600107277
+Total,County,01001,Autauga County,"Autauga County, AL",27965,B,All Wired,0.978222778,0.976971214,0.974861434,0.974074736,0.974074736,0.603361345
+Total,County,01001,Autauga County,"Autauga County, AL",27965,R,All Fixed Wireless,0.845914536,0.770498838,0.770463079,0.432040050,0,0.000000000
+Total,County,01001,Autauga County,"Autauga County, AL",27965,B,All Fixed Wireless,0.844984802,0.673127123,0.625424638,0.274521724,0,0.000000000
+Total,County,09001,Fairfield County,"Fairfield County, CT",412178,R,Any Technology,1.000000000,1.000000000,1.000000000,1.000000000,1.000000000,0.862066874
+Total,County,09001,Fairfield County,"Fairfield County, CT",412178,R,All Wired,0.961574854,0.961574854,0.959874132,0.959660632,0.959660632,0.862066874
+Total,County,09001,Fairfield County,"Fairfield County, CT",412178,R,All Fixed Wireless,0.838802653,0.710862783,0.710862783,0.389603521,0,0.000000000
+Total,County,72083,Las Marías Municipio,"Las Marías Municipio, PR",3137,R,Any Technology,1.000000000,1.000000000,1.000000000,1.000000000,1.000000000,0.716608224
+Total,National,99,National,National,162419094,R,Any Technology,0.999999895,0.999999877,0.999999840,0.999921727,0.999726775,0.691551727
+Urban,County,01001,Autauga County,"Autauga County, AL",16325,R,Any Technology,1.000000000,1.000000000,1.000000000,1.000000000,1.000000000,0.418805513

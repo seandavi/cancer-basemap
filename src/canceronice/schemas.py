@@ -4775,6 +4775,79 @@ TABLES = {
     # The table declaration(s) goes directly under this comment block.
     # Leave this marker and the blank lines around it untouched so
     # independent branches merge cleanly.
+    "raw.fcc__bdc_summary": TableDef(
+        schema=Schema(
+            NestedField(1, "area_data_type", StringType(), required=True,
+                        doc="'Total' (the whole geography), or 'Urban' | 'Rural' | 'Tribal' | "
+                            "'Nontribal' (a sub-split of it). Only 'Total' is derived into "
+                            "measure.observation."),
+            NestedField(2, "geography_type", StringType(), required=True,
+                        doc="'National' | 'State' | 'County' | 'CBSA (MSA)' | "
+                            "'Congressional District' | 'Tribal'. Only 'County' is derived; no "
+                            "tract-level summary is published in this file (verified 2026-09-18)."),
+            NestedField(3, "geography_id", StringType(), required=True,
+                        doc="The geography's own identifier in the source's native format: "
+                            "5-digit county FIPS for County rows (e.g. '09001'), '99' for the "
+                            "single National row, CBSA/congressional-district/tribal codes in "
+                            "their own schemes."),
+            NestedField(4, "geography_desc", StringType(), doc="Short geography name."),
+            NestedField(5, "geography_desc_full", StringType(),
+                        doc="Geography name with state, e.g. 'Autauga County, AL'."),
+            NestedField(6, "total_units", StringType(),
+                        doc="Broadband-serviceable locations (FCC BDC Fabric) counted in this "
+                            "geography/biz_res/technology combination -- the denominator behind "
+                            "the speed_* percentages. Not published as a raw served-locations "
+                            "count, only as a percentage."),
+            NestedField(7, "biz_res", StringType(), required=True,
+                        doc="The source's own residential/business location-category code, "
+                            "'R' or 'B' -- kept native, not expanded (SPEC.md: source-native "
+                            "categories are never harmonized in place; see module docstring)."),
+            NestedField(8, "technology", StringType(), required=True,
+                        doc="'Any Technology' | 'All Wired' | 'All Fixed Wireless' | 'All "
+                            "Satellite' | 'All Wired and Licensed Fixed Wireless' | 'Any "
+                            "Terrestrial' | 'Fiber' | 'Cable' | 'Cable/Fiber' | 'Copper' | "
+                            "'Licensed Fixed Wireless' | 'Unlicensed Fixed Wireless' | 'GSO "
+                            "Satellite' | 'NGSO Satellite' | 'Other'. Only 'Any Technology', "
+                            "'All Wired' and 'All Fixed Wireless' are derived."),
+            NestedField(9, "speed_02_02", StringType(),
+                        doc="Fraction (0-1) of total_units with fixed broadband available at "
+                            ">=2/0.2 Mbps down/up. Not derived; landed for completeness."),
+            NestedField(10, "speed_10_1", StringType(),
+                        doc="Fraction (0-1) at >=10/1 Mbps. Not derived; landed for completeness."),
+            NestedField(11, "speed_25_3", StringType(),
+                        doc="Fraction (0-1) at >=25/3 Mbps -- derived into "
+                            "measure.observation's 'FCC_BDC:25_3:*' measures."),
+            NestedField(12, "speed_100_20", StringType(),
+                        doc="Fraction (0-1) at >=100/20 Mbps -- derived into "
+                            "measure.observation's 'FCC_BDC:100_20:*' measures."),
+            NestedField(13, "speed_250_25", StringType(),
+                        doc="Fraction (0-1) at >=250/25 Mbps. Not derived; landed for completeness."),
+            NestedField(14, "speed_1000_100", StringType(),
+                        doc="Fraction (0-1) at >=1000/100 Mbps -- derived into "
+                            "measure.observation's 'FCC_BDC:1000_100:*' measures. A real 0 means "
+                            "genuinely unserved, never a missing value -- this file publishes no "
+                            "suppression sentinel (verified 2026-09-18; module docstring)."),
+            NestedField(15, "bdc_as_of", StringType(), required=True,
+                        doc="The BDC biannual filing's as-of date (June 30 or December 31), e.g. "
+                            "'2025-12-31' -- the version axis (SPEC.md § Versioning model), not a "
+                            "retrieval date. Raw is replaced wholesale per value of this column."),
+            NestedField(16, "bdc_data_vintage", StringType(),
+                        doc="The date this filing's public files were last (re)generated (FCC's "
+                            "own map_processing_updates API), distinct from bdc_as_of: FCC "
+                            "revises a filing's files after its availability-challenge process "
+                            "closes, so the same as-of date can be republished under a later "
+                            "vintage with corrected numbers. NULL when landed from an "
+                            "already-downloaded file whose generation date wasn't captured."),
+            NestedField(17, "landed_in", StringType(), required=True,
+                        doc="The cancerOnIce release whose ingest landed these rows."),
+        ),
+        comment="FCC Broadband Data Collection biannual filing's nationwide fixed-broadband "
+                "summary-by-geography file, landed verbatim and whole: every geography type, "
+                "technology, speed tier, biz_res category and area_data_type split in one file "
+                "(SPEC.md § Sources -- second tranche). Public domain (17 U.S.C. Sec 105); the "
+                "location-level Fabric behind these percentages is licensed and NOT landed here "
+                "(see fcc_broadband.py docstring).",
+    ),
 
     # --- raw: bls laus ---
     # BLS Local Area Unemployment Statistics, county (#94). Landed whole per

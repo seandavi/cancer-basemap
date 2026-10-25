@@ -194,6 +194,19 @@ def main():
     # The local `from . import <module>` and the subparser goes directly under this comment block.
     # Leave this marker and the blank lines around it untouched so
     # independent branches merge cleanly.
+    from . import fcc_broadband
+    fb = sub.add_parser("fcc-broadband", help="land the FCC BDC nationwide fixed-broadband "
+                        "summary-by-geography file for one filing, then derive (see "
+                        "fcc_broadband.py's docstring for the two ways to get the file)")
+    fb.add_argument("--release", required=True, help="cancerOnIce release, e.g. 2026.09")
+    fb.add_argument("--as-of", dest="as_of", help="BDC filing as-of date, e.g. 2025-12-31 "
+                    "(required with --file; default latest when using "
+                    "FCC_BDC_USERNAME/FCC_BDC_TOKEN)")
+    fb.add_argument("--file", dest="file", help="an already-downloaded .csv or .csv.zip; "
+                    "omit to fetch via the FCC's Public Data API using "
+                    "FCC_BDC_USERNAME/FCC_BDC_TOKEN")
+    fb.add_argument("--data-vintage", dest="data_vintage",
+                    help="the filing's last_updated_date, if known (optional; NULL otherwise)")
 
     # --- raw: epa ejscreen ---
     # EPA EJScreen, every archived edition (#97).
@@ -382,6 +395,8 @@ def main():
     # The `elif args.cmd == ...` dispatch branch goes directly under this comment block.
     # Leave this marker and the blank lines around it untouched so
     # independent branches merge cleanly.
+    elif args.cmd == "fcc-broadband":
+        _print(fcc_broadband.ingest(cat, args.release, args.as_of, args.file, args.data_vintage))
 
     # --- raw: epa ejscreen ---
     # EPA EJScreen, every archived edition (#97).
