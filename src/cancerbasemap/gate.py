@@ -67,7 +67,8 @@ def bundle_checks(con, tables, queries):
                           "" if columns == declared else "manifest and Parquet differ")]
     if any(t["schema"] == "measure" and t["table"] == "observation" for t in tables):
         bad = con.execute("SELECT count(*) FROM measure.observation "
-                          "WHERE value IS NOT NULL AND value_status != 'reported'").fetchone()[0]
+                          "WHERE value_status IS NULL "
+                          "OR (value_status != 'reported' AND value IS NOT NULL)").fetchone()[0]
         checks.append(_check("measure.observation.value_null_unless_reported", bad == 0,
                              f"{bad} rows" if bad else ""))
     else:
@@ -93,34 +94,39 @@ def reference_checks(tables, ref_tables):
         checks.append(_check(f"{name}.present", t is not None))
         if t is None:
             continue
-        lo, hi = r["row_count"] * MIN_ROW_RATIO, r["row_count"] * MAX_ROW_RATIO
-        checks.append(_check(f"{name}.row_count_bounds", lo <= t["row_count"] <= hi,
-                             f"{t['row_count']} rows, reference {r['row_count']}"))
+        detail = f"{t['row_count']} rows, reference {r['row_count']}"
+        checks.append(_check(f"{name}.row_count_bounds", t["row_count"] >= r["row_count"] * MIN_ROW_RATIO, detail))
+        # Whole new vintages are legitimate growth: warn, never fail. A reference of 0 bounds nothing.
+        checks.append(_check(f"{name}.row_count_growth",
+                             not r["row_count"] or t["row_count"] <= r["row_count"] * MAX_ROW_RATIO,
+                             detail, required=False))
         same = [(c["name"], c["type"]) for c in t["columns"]] == [(c["name"], c["type"]) for c in r["columns"]]
         checks.append(_check(f"{name}.schema_unchanged", same, "" if same else "columns or types differ"))
     return checks
 
 
-def manifest_sha256(bundle: Path) -> str:
-    return hashlib.sha256((bundle / "manifest.json").read_bytes()).hexdigest()
-
-
 def _reference_manifest(reference):
-    """The reference's manifest.json, or None when no release is published there (404)."""
+    """The reference's manifest.json, or None when no release is published there (404).
+    Anything else, including a 200 that is not a manifest, raises."""
     try:
         with urllib.request.urlopen(f"{reference.rstrip('/')}/manifest.json") as r:
-            return json.load(r)
+            m = json.load(r)
     except urllib.error.HTTPError as e:
         if e.code == 404:
             return None
         raise
+    if not (isinstance(m, dict) and "release" in m and isinstance(m.get("tables"), list)):
+        raise ValueError("not a manifest")
+    return m
 
 
 def gate(bundle: Path, reference: str | None = DEFAULT_REFERENCE) -> bool:
     """Print the gate report for `bundle` against `reference` (a release base URL; None for the
     bundle checks only); True when every required check passes, and then write gate.json."""
     (bundle / GATE_FILE).unlink(missing_ok=True)
-    manifest = json.loads((bundle / "manifest.json").read_text())
+    # The bytes read here are the bytes parsed and the bytes hashed into gate.json.
+    manifest_bytes = (bundle / "manifest.json").read_bytes()
+    manifest = json.loads(manifest_bytes)
     ref = None
     if reference is not None:
         try:
@@ -144,9 +150,9 @@ def gate(bundle: Path, reference: str | None = DEFAULT_REFERENCE) -> bool:
             print(f"FAIL: reference release {ref['release']} is not older than {manifest['release']}; "
                   f"pass --reference with an earlier release's folder")
             return False
-    queries = readme_queries(README)
-    if not queries:
-        print("README marks no ```sql bundle queries: skipping the README query checks")
+    queries = readme_queries(README) if README.exists() else []
+    if not queries:  # an installed wheel has no README
+        print("README not found or marks no ```sql bundle queries: skipping the README query checks")
     con = bundle_con(bundle, manifest["tables"])
     checks = bundle_checks(con, manifest["tables"], queries)
     if ref is not None:
@@ -164,9 +170,12 @@ def gate(bundle: Path, reference: str | None = DEFAULT_REFERENCE) -> bool:
             print(f"  {status:4}  {check}" + (f"  ({detail})" if detail else ""))
     failed = sum(required and not passed for _, passed, required, _ in checks)
     print(f"FAIL: {failed} required check(s) failed" if failed else "PASS")
+    if not failed and (bundle / "manifest.json").read_bytes() != manifest_bytes:
+        print("FAIL: manifest.json changed while the gate ran; not certifying it")
+        return False
     if not failed:
         (bundle / GATE_FILE).write_text(json.dumps({
-            "release": manifest["release"], "manifest_sha256": manifest_sha256(bundle),
+            "release": manifest["release"], "manifest_sha256": hashlib.sha256(manifest_bytes).hexdigest(),
             "reference": reference, "reference_release": ref and ref["release"],
             "passed_at": datetime.now(UTC).isoformat(timespec="seconds")}, indent=2) + "\n")
     return not failed

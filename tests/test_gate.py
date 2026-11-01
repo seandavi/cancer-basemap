@@ -4,9 +4,11 @@ Bundles are tiny Parquet + manifest.json in the `publish` layout, under tmp_path
 """
 
 import hashlib
+import io
 import json
 import sys
 import threading
+import urllib.error
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
@@ -72,7 +74,7 @@ def test_clean_bundle_passes_and_gate_json_binds_the_manifest(tmp_path, referenc
     out = capsys.readouterr().out
     assert out.startswith(f"release 2026-11-01 against {reference.as_uri()} (release 2026-10-01)\n")
     assert "  ok    value_null_unless_reported" in out and out.endswith("PASS\n")
-    assert "README marks no ```sql bundle queries: skipping" in out
+    assert "marks no ```sql bundle queries: skipping" in out
     g = json.loads((bundle / gate.GATE_FILE).read_text())
     assert g["manifest_sha256"] == hashlib.sha256((bundle / "manifest.json").read_bytes()).hexdigest()
     assert g["release"] == "2026-11-01" and g["reference_release"] == "2026-10-01"
@@ -156,3 +158,72 @@ def test_readme_queries_run_only_when_marked_for_the_bundle(tmp_path, monkeypatc
     monkeypatch.setattr(gate, "README", readme)
     assert _run(monkeypatch, str(candidate(tmp_path)), "--reference", "none") == 0
     assert "  ok    readme_query_line_6  (1 rows)" in capsys.readouterr().out
+
+
+def _observation_bundle(tmp_path, sql):
+    return _bundle(tmp_path / "candidate", "2026-11-01", {
+        "measure.observation": sql, "geography.unit": GEO.format(n=33)})
+
+
+def test_a_null_value_status_fails_the_hard_gate(tmp_path, monkeypatch, capsys):
+    bundle = _observation_bundle(tmp_path, "SELECT 1 AS geo_id, NULL::VARCHAR AS value_status, 4.2 AS value")
+    assert _run(monkeypatch, str(bundle), "--reference", "none") == 1
+    assert "  FAIL  value_null_unless_reported  (1 rows)" in capsys.readouterr().out
+    assert not (bundle / gate.GATE_FILE).exists()
+
+
+def test_a_manifest_changed_during_the_check_is_not_certified(tmp_path, monkeypatch, capsys):
+    bundle = candidate(tmp_path)
+    real = gate.bundle_checks
+
+    def mutate(*args):
+        m = json.loads((bundle / "manifest.json").read_text())
+        (bundle / "manifest.json").write_text(json.dumps({**m, "release": "2026-11-02"}))
+        return real(*args)
+
+    monkeypatch.setattr(gate, "bundle_checks", mutate)
+    assert _run(monkeypatch, str(bundle), "--reference", "none") == 1
+    assert "manifest.json changed while the gate ran" in capsys.readouterr().out
+    assert not (bundle / gate.GATE_FILE).exists()
+
+
+def test_a_missing_readme_skips_the_readme_checks(tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr(gate, "README", tmp_path / "nonexistent" / "README.md")
+    assert _run(monkeypatch, str(candidate(tmp_path)), "--reference", "none") == 0
+    assert "README not found" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("ref_rows, rows, code, expect", [
+    (0, 5, 0, "  ok    row_count_growth"),
+    (1000, 700, 1, "  FAIL  row_count_bounds  (700 rows, reference 1000)"),
+    (1000, 5000, 0, "  warn  row_count_growth  (5000 rows, reference 1000)"),
+])
+def test_row_count_bounds_shrink_fails_growth_warns(tmp_path, monkeypatch, capsys, ref_rows, rows, code, expect):
+    ref = _bundle(tmp_path / "ref", "2026-10-01", {"geography.unit": GEO.format(n=ref_rows),
+                                                   "measure.observation": OBSERVATION.format(value="NULL")})
+    bundle = _bundle(tmp_path / "candidate", "2026-11-01", {"geography.unit": GEO.format(n=rows),
+                                                            "measure.observation": OBSERVATION.format(value="NULL")})
+    assert _run(monkeypatch, str(bundle), "--reference", ref.as_uri()) == code
+    assert expect in capsys.readouterr().out
+
+
+def _serve(monkeypatch, status, body):
+    def urlopen(url):
+        if status == "urlerror":
+            raise urllib.error.URLError("unreachable")
+        if status != 200:
+            raise urllib.error.HTTPError(url, status, "x", {}, None)
+        return io.BytesIO(body)
+
+    monkeypatch.setattr(gate.urllib.request, "urlopen", urlopen)
+
+
+@pytest.mark.parametrize("status, body", [
+    (200, b'["not", "a", "manifest"]'), (200, b'{"release": "2026-10-01"}'), (200, b"<html>"),
+    (500, b""), ("urlerror", b"")])
+def test_an_unreadable_reference_fails_closed(tmp_path, monkeypatch, capsys, status, body):
+    _serve(monkeypatch, status, body)
+    bundle = candidate(tmp_path)
+    assert _run(monkeypatch, str(bundle), "--reference", "http://ref.example/latest") == 1
+    assert "no readable manifest.json" in capsys.readouterr().out
+    assert not (bundle / gate.GATE_FILE).exists()
