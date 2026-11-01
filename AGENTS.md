@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Conventions for AI agents (and humans) working on cancerOnIce.
+Conventions for AI agents (and humans) working on Cancer Basemap.
 
 ## What this project is
 
@@ -10,13 +10,13 @@ keyed on geography and time, plus the thin client helper for reading them.
 change contradicts the SPEC, edit SPEC.md in the same commit and say so in your
 report.
 
-cancerOnIce is the sibling of [biocOnIce](https://github.com/seandavi/bioc-on-ice)
+Cancer Basemap is the sibling of [biocOnIce](https://github.com/seandavi/bioc-on-ice)
 and adopts its ADRs by reference (SPEC.md § Architecture). Decisions specific
 to this repo are recorded in `docs/adr/`. Contradicting an ADR — here or
 inherited — is allowed and sometimes right, but it should be argued rather
 than drifted into.
 
-cancerOnIce is the *data*; [icegate](https://github.com/seandavi/icegate) is
+Cancer Basemap is the *data*; [icegate](https://github.com/seandavi/icegate) is
 the gateway that serves it. Nothing here should grow gateway concerns (auth,
 routing, credential vending) — that boundary is deliberate.
 

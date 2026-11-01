@@ -21,7 +21,7 @@ import pyarrow as pa
 import pytest
 from pyiceberg.expressions import EqualTo
 
-from canceronice import hrsa_sites, merge
+from cancerbasemap import hrsa_sites, merge
 
 REL = "2026.09"
 HC_CSV = str(Path(__file__).parent / "tiny_hrsa_hc_sites.csv")

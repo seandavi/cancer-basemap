@@ -222,7 +222,7 @@ from pyiceberg.expressions import And, EqualTo, In
 
 from . import cancer_site, merge
 
-USER_AGENT = "cancerOnIce/1.0 (+https://github.com/seandavi/cancer-on-ice)"
+USER_AGENT = "cancerbasemap/1.0 (+https://github.com/seandavi/cancer-basemap)"
 
 # Vintage -> Zenodo record id / DOI. state-cancer-profile-scraper's data/vintages.json,
 # cross-checked live against https://zenodo.org/api/records/<id>, 2026-09-18.

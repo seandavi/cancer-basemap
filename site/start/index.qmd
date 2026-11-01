@@ -2,7 +2,7 @@
 title: "Start here"
 ---
 
-Catchment Lake is read anonymously — no account, no token — through
+Cancer Basemap is read anonymously — no account, no token — through
 [DuckDB's Iceberg extension](https://duckdb.org/docs/extensions/iceberg.html).
 Every client below speaks that same SQL underneath; pick the one you already
 use.

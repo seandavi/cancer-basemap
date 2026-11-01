@@ -85,7 +85,7 @@ the curated CSV; the issue's "every cancer_site_code used by #27 resolves"
 is unaffected since there is no code to resolve for it.
 
 **Curated NCIt/MONDO bridge
-(`src/canceronice/data/cancer_site_ontology.csv`).** Researched first, per
+(`src/cancerbasemap/data/cancer_site_ontology.csv`).** Researched first, per
 the issue: neither SEER, NCIt nor MONDO publishes a site-recode-to-ontology
 crosswalk (checked NCI EVS/OLS4 and MONDO's own mapping docs, 2026-09-18) --
 this file is this project's own curation, `mapping_basis = 'curated'`
@@ -174,7 +174,7 @@ from pyiceberg.expressions import And, EqualTo
 
 from . import merge
 
-USER_AGENT = "cancerOnIce/1.0 (+https://github.com/seandavi/cancer-on-ice)"
+USER_AGENT = "cancerbasemap/1.0 (+https://github.com/seandavi/cancer-basemap)"
 
 SITE_RECODE_URL = "https://seer.cancer.gov/siterecode/icdo3_dwhoheme/index.txt"
 SITE_RECODE_EDITION = "icdo3_dwhoheme"

@@ -178,7 +178,7 @@ from pyiceberg.expressions import AlwaysTrue, And, EqualTo, In
 from . import merge, schemas
 
 URL = "https://echo.epa.gov/files/echodownloads/SDWA_latest_downloads.zip"
-USER_AGENT = "cancerOnIce/1.0 (+https://github.com/seandavi/cancer-on-ice)"
+USER_AGENT = "cancerbasemap/1.0 (+https://github.com/seandavi/cancer-basemap)"
 GEO_VINTAGE = 2010
 MEASURE_ID = "SDWIS:violations_health_based"
 STRATUM_ID = "SDWIS:none"

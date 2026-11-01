@@ -3,7 +3,7 @@ measure.cancer_site_group, checked against already-landed measure.cancer_site
 codes.
 
 The CSV under test for the real-data assertions is the real packaged file
-(src/canceronice/data/cancer_site_groups.csv), the same way test_geography_alias.py
+(src/cancerbasemap/data/cancer_site_groups.csv), the same way test_geography_alias.py
 uses the real county_recodes.csv -- it IS the review artifact for #126. A tiny
 fixture (tests/tiny_cancer_site_groups.csv) exercises the mechanics against a
 small, fast measure.cancer_site built from the existing cancer_site fixtures.
@@ -15,7 +15,7 @@ import pyarrow as pa
 import pytest
 from pyiceberg.expressions import EqualTo
 
-from canceronice import cancer_site, cancer_site_group, merge
+from cancerbasemap import cancer_site, cancer_site_group, merge
 
 REL = "2026.09"
 SITE_TXT = str(Path(__file__).parent / "tiny_seer_site_recode.txt")
@@ -149,7 +149,7 @@ def test_real_curated_csv_covers_every_declared_group(cat):
     resolves against the real cancer_site.py fixture-free ingest is left to
     a manual end-to-end run (SPEC.md/AGENTS.md: tests stay offline) -- this
     only checks the CSV's own internal shape."""
-    from canceronice import cancer_site_group as m
+    from cancerbasemap import cancer_site_group as m
     import csv as csv_module
     with open(m.DATA_FILE, newline="") as f:
         real_rows = list(csv_module.DictReader(f))

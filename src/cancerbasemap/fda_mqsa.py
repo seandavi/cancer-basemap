@@ -103,7 +103,7 @@ from pyiceberg.expressions import EqualTo
 
 from . import merge
 
-USER_AGENT = "cancerOnIce/1.0 (+https://github.com/seandavi/cancer-on-ice)"
+USER_AGENT = "cancerbasemap/1.0 (+https://github.com/seandavi/cancer-basemap)"
 URL = "http://www.accessdata.fda.gov/premarket/ftparea/public.zip"
 
 # The file's real 9 columns, in file order (no header row -- see module docstring).

@@ -211,7 +211,7 @@ from pyiceberg.expressions import And, EqualTo, In
 
 from . import merge
 
-USER_AGENT = "cancerOnIce/1.0 (+https://github.com/seandavi/cancer-on-ice)"
+USER_AGENT = "cancerbasemap/1.0 (+https://github.com/seandavi/cancer-basemap)"
 BASE = "https://svi.cdc.gov/Documents/Data"
 
 EDITIONS = ("2000", "2010", "2014", "2016", "2018", "2020", "2022")

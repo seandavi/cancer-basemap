@@ -1,7 +1,7 @@
 """Release-scoped merge maintaining full Type 2 history.
 
 A row is one **version** of a record, valid over `[valid_from, valid_to)` in
-cancerOnIce release coordinates. Merging the complete upstream state for a
+Cancer Basemap release coordinates. Merging the complete upstream state for a
 scope sorts every record into one of five outcomes:
 
   new         business key absent      -> insert, valid_from = this release

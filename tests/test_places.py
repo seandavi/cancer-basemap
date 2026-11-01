@@ -21,7 +21,7 @@ module docstring), so no suppressed tract row is faked into a fixture.
 import pytest
 from pyiceberg.expressions import EqualTo
 
-from canceronice import catalog, places
+from cancerbasemap import catalog, places
 
 REL1, REL2 = "2026.08", "2026.09"
 
@@ -155,8 +155,8 @@ DATA_2025_MALFORMED = [*DATA_2025, line(
 
 @pytest.fixture
 def cat(tmp_path, monkeypatch):
-    monkeypatch.setenv("CANCERONICE_WAREHOUSE", str(tmp_path / "warehouse"))
-    monkeypatch.delenv("CANCERONICE_URI", raising=False)
+    monkeypatch.setenv("CANCERBASEMAP_WAREHOUSE", str(tmp_path / "warehouse"))
+    monkeypatch.delenv("CANCERBASEMAP_URI", raising=False)
     return catalog()
 
 

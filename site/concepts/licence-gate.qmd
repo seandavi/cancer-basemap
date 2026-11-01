@@ -19,7 +19,7 @@ Association, and American Dental Association carry their own copyright and
 "may not be copied or reproduced in whole or in part without the prior
 consent of the copyright owner."
 
-`src/canceronice/hrsa_ahrf.py` checks AHRF's own per-field source attribution
+`src/cancerbasemap/hrsa_ahrf.py` checks AHRF's own per-field source attribution
 for every one of its 45 distinct upstream sources and builds an **allowlist**
 — a column lands only if its source is confirmed clear, not by default:
 
@@ -56,7 +56,7 @@ The licence gate isn't only about copyright. EPA's SDWIS public water
 systems file bundles an administrative-contact block — names, emails, phone
 numbers — for roughly half a million water systems, many of them small,
 privately owned systems where the "organization" field turns out to be a
-person's own name rather than a business. `src/canceronice/epa_sdwis.py`
+person's own name rather than a business. `src/cancerbasemap/epa_sdwis.py`
 checked this directly rather than assuming a column named `ORG_NAME` is
 organizational: of systems that are both privately owned and small, 30%
 have an `ORG_NAME` matching a `"LASTNAME, FIRSTNAME"` pattern, and 94% of

@@ -90,7 +90,7 @@ that documented, deterministic normalisation is tried -- SPEC.md: never
 fuzzy-matched.
 
 Verified end-to-end against the real 2023 national file, joined against a
-real `canceronice gazetteer --year 2020` landing (GEO_VINTAGE = 2020,
+real `cancerbasemap gazetteer --year 2020` landing (GEO_VINTAGE = 2020,
 hrsa_sites.py's precedent -- a real 2020-dated gazetteer file predates
 Connecticut's October 2022 county-to-planning-region switch, so it still
 carries the eight legacy counties TRI itself reports): 2,464 distinct
@@ -146,7 +146,7 @@ from pyiceberg.expressions import And, EqualTo, In
 
 from . import merge
 
-USER_AGENT = "cancerOnIce/1.0 (+https://github.com/seandavi/cancer-on-ice)"
+USER_AGENT = "cancerbasemap/1.0 (+https://github.com/seandavi/cancer-basemap)"
 URL_TEMPLATE = "https://data.epa.gov/efservice/downloads/tri/mv_tri_basic_download/{year}_US/csv"
 GEO_VINTAGE = 2020
 GRAMS_TO_LB = 0.0022046226218488
@@ -288,7 +288,7 @@ def transform(cat, release, year):
         con.register("state_fips", cat.load_table("raw.census__state_fips").scan().to_arrow())
     except NoSuchTableError:
         raise SystemExit("epa_tri: geography.unit / raw.census__state_fips not landed -- "
-                         "land the Census Gazetteer first (`canceronice gazetteer`)")
+                         "land the Census Gazetteer first (`cancerbasemap gazetteer`)")
     _geo_match(con)
 
     latest_year = con.sql("SELECT max(TRY_CAST(YEAR AS INTEGER)) FROM raw").fetchone()[0]

@@ -16,7 +16,7 @@ in it imports this module.
 the release id is the only catalog validity. Of the three time axes in SPEC.md §
 Versioning model, two remain data columns -- `period_start`/`period_end` (what
 the estimate describes) and `source_release` (the upstream edition that
-published it) -- and the third, when cancerOnIce served the row, is the release
+published it) -- and the third, when Cancer Basemap served the row, is the release
 itself. Row-level `valid_from`/`valid_to` are not part of a release.
 
 Domain values (namespaces, enums, suppression meaning, licence) are this
@@ -100,7 +100,7 @@ def _table(identifier, overrides, grain, description):
         grain=grain,
         primary_key=d.business_key,
         temporal_model=TemporalModel.UPSERT_LATEST_SNAPSHOT,
-        owner="cancer-on-ice",
+        owner="cancer-basemap",
         license=PLACES_LICENSE,
         columns=_columns(fields, overrides),
         sort_by=d.sort_by,
@@ -130,9 +130,9 @@ DEFINITION = _table(
 
 PLACES = DatasetContract(
     id="canceronice-places",
-    title="Catchment Lake, built on the cancerOnIce catalog: CDC PLACES slice",
+    title="Cancer Basemap: CDC PLACES slice",
     description="CDC PLACES county/tract model-based estimates as measure.observation, every "
                 "landed PLACES edition included, plus their measure.definition rows.",
-    publisher="cancer-on-ice",
+    publisher="cancer-basemap",
     tables={"measure.observation": OBSERVATION, "measure.definition": DEFINITION},
 )

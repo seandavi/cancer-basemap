@@ -7,7 +7,7 @@ title: "What changed across State Cancer Profiles vintages"
 (`raw.scp__incidence`/`mortality`/`risk`), but only `V3` is derived into
 `measure.observation` — deriving `V1`/`V2` too, so this page can diff a real
 vintage-over-vintage change, is tracked in
-[cancer-on-ice#117](https://github.com/seandavi/cancer-on-ice/issues/117).
+[cancer-basemap#117](https://github.com/seandavi/cancer-basemap/issues/117).
 Once that lands, this page will run the same "diff two releases" pattern as
 [What changed between PLACES 2024 and 2025](places-diff.qmd), scoped to SCP's
 own vintages instead.

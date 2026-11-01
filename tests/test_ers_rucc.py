@@ -13,7 +13,7 @@ import pyarrow as pa
 import pytest
 from pyiceberg.expressions import EqualTo
 
-from canceronice import ers_rucc, merge
+from cancerbasemap import ers_rucc, merge
 
 REL = "2026.08"
 CSV = str(Path(__file__).parent / "tiny_ers_rucc.csv")

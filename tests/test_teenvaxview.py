@@ -22,7 +22,7 @@ import pyarrow as pa
 import pytest
 from pyiceberg.expressions import EqualTo
 
-from canceronice import merge, teenvaxview
+from cancerbasemap import merge, teenvaxview
 
 REL = "2026.09"
 

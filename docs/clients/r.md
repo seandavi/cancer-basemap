@@ -12,10 +12,10 @@ this pass. Everything R-shaped below is written against the DBI/dplyr/
 dbplyr API and this project's own SQL (verified separately via the DuckDB
 CLI and Python, both against the live catalog — see
 [duckdb-cli.md](duckdb-cli.md)), but not run as R code. If you can run R,
-please report back on [issue #115](https://github.com/seandavi/cancer-on-ice/issues/115).
+please report back on [issue #115](https://github.com/seandavi/cancer-basemap/issues/115).
 
 [`r/connect.R`](../../r/connect.R) ports bioc-on-ice's `r/connect.R` (same
-pattern, cancerOnIce's catalog/endpoint). It tries the current attach
+pattern, Cancer Basemap's catalog/endpoint). It tries the current attach
 option name (`URI`) and falls back to the old one (`ENDPOINT`) on error,
 because CRAN's `duckdb` package is 1.5.5 as of this writing — confirmed
 via the Python `duckdb` package at the same version (see
@@ -25,7 +25,7 @@ logic itself was not run in R** (no working `duckdb` package on this build
 host, see above) — only the underlying DuckDB behavior it depends on:
 
 ```r
-catchmentlake_connect <- function(endpoint = "https://icegate-canceronice.seandavi.workers.dev",
+cancerbasemap_connect <- function(endpoint = "https://icegate-canceronice.seandavi.workers.dev",
                                    catalog = "canceronice",
                                    alias = "coi") {
   con <- DBI::dbConnect(duckdb::duckdb())
@@ -48,7 +48,7 @@ catchmentlake_connect <- function(endpoint = "https://icegate-canceronice.seanda
 
 ```r
 source("r/connect.R")
-con <- catchmentlake_connect()
+con <- cancerbasemap_connect()
 
 DBI::dbGetQuery(con, "
   SELECT u.name, o.source_release, o.value AS pct, o.lower, o.upper, o.value_status,

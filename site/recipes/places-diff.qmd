@@ -20,7 +20,7 @@ South Central Connecticut Planning Region (`09170`) is the default —
 Connecticut's PLACES rows use 2022-vintage planning-region FIPS even though
 PLACES tags them `geo_vintage=2020` (see
 [Concepts › Time axes](/concepts/time-axes.qmd) and
-[cancer-on-ice#21](https://github.com/seandavi/cancer-on-ice/issues/21)).
+[cancer-basemap#21](https://github.com/seandavi/cancer-basemap/issues/21)).
 Try `08031` (Denver County, CO) for an ordinary county.
 
 ```{ojs}

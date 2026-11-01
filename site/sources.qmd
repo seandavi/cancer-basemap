@@ -16,9 +16,9 @@ import ast
 import re
 from pathlib import Path
 
-from canceronice import schemas
+from cancerbasemap import schemas
 
-# Module -> its `canceronice` CLI subcommand (src/canceronice/__main__.py).
+# Module -> its `cancerbasemap` CLI subcommand (src/cancerbasemap/__main__.py).
 # Hardcoded rather than parsed out of __main__.py's argparse calls: it's a
 # short, stable list, and regexing argparse construction for this would be
 # more code than the mapping itself.
@@ -39,7 +39,7 @@ CLI_SUBCOMMAND = {
     "census_acs": "acs",
 }
 
-SRC_DIR = Path("../src/canceronice")
+SRC_DIR = Path("../src/cancerbasemap")
 KNOWN_TABLES = set(schemas.TABLES)
 TABLE_RE = re.compile(r'"([a-z_]+\.[a-zA-Z0-9_]+)"')
 
@@ -59,9 +59,9 @@ for module_name in sorted(CLI_SUBCOMMAND):
 
     title = module_name.replace("_", " ")
     print(f"## {title} {{#src-{module_name}}}\n")
-    print(f"`uv run canceronice {CLI_SUBCOMMAND[module_name]}` "
-          f"([`src/canceronice/{module_name}.py`]"
-          f"(https://github.com/seandavi/cancer-on-ice/blob/main/src/canceronice/{module_name}.py))\n")
+    print(f"`uv run cancerbasemap {CLI_SUBCOMMAND[module_name]}` "
+          f"([`src/cancerbasemap/{module_name}.py`]"
+          f"(https://github.com/seandavi/cancer-basemap/blob/main/src/cancerbasemap/{module_name}.py))\n")
     if tables_written:
         table_links = ", ".join(f"[`{t}`](/dictionary/index.qmd)" for t in tables_written)
         print(f"**Tables written:** {table_links}\n")

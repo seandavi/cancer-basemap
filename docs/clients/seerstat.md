@@ -3,7 +3,7 @@
 SEER\*Stat cannot connect to the lake, or to anything external — it reads
 only its own SEER\*Stat-format databases (`.dic`/state-county-level session
 files it manages itself). There is no route where SEER\*Stat is the client
-and Catchment Lake is the server. The workflow instead runs the other
+and Cancer Basemap is the server. The workflow instead runs the other
 direction:
 
 1. In SEER\*Stat, run a rate session (county &times; year &times; site) as

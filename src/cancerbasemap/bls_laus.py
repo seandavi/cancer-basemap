@@ -139,9 +139,9 @@ from . import merge
 # containing a URL (or "github") gets 403 even with an email; a plain product
 # token plus a contact address gets 200. The address is the operator's, so it
 # comes from the environment rather than being committed:
-#   CANCERONICE_CONTACT=you@example.org
-_CONTACT = os.environ.get("CANCERONICE_CONTACT")
-USER_AGENT = f"cancerOnIce-ingest/0.1 ({_CONTACT})" if _CONTACT else "cancerOnIce-ingest/0.1"
+#   CANCERBASEMAP_CONTACT=you@example.org
+_CONTACT = os.environ.get("CANCERBASEMAP_CONTACT")
+USER_AGENT = f"cancerbasemap-ingest/0.1 ({_CONTACT})" if _CONTACT else "cancerbasemap-ingest/0.1"
 BASE = "https://download.bls.gov/pub/time.series/la"
 URL_COUNTY = f"{BASE}/la.data.64.County"
 URL_AREA = f"{BASE}/la.area"

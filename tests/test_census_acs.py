@@ -24,7 +24,7 @@ from pathlib import Path
 
 import pytest
 
-from canceronice import census_acs
+from cancerbasemap import census_acs
 
 REL = "2026.09"
 DAT_DIR = str(Path(__file__).parent / "tiny_acs")

@@ -25,7 +25,7 @@ import pyarrow as pa
 import pytest
 from pyiceberg.expressions import EqualTo
 
-from canceronice import epa_radon, merge
+from cancerbasemap import epa_radon, merge
 
 REL = "2026.09"
 XLS = str(Path(__file__).parent / "tiny_epa_radon_zones.xls")

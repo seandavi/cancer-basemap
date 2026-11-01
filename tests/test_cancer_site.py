@@ -18,7 +18,7 @@ import pyarrow as pa
 import pytest
 from pyiceberg.expressions import EqualTo
 
-from canceronice import cancer_site, merge
+from cancerbasemap import cancer_site, merge
 
 REL = "2026.08"
 SITE_TXT = str(Path(__file__).parent / "tiny_seer_site_recode.txt")

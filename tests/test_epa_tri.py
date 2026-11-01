@@ -35,7 +35,7 @@ import pyarrow as pa
 import pytest
 from pyiceberg.expressions import AlwaysTrue, EqualTo
 
-from canceronice import epa_tri, merge
+from cancerbasemap import epa_tri, merge
 
 REL = "2026.09"
 DIR = Path(__file__).parent

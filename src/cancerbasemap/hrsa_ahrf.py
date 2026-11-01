@@ -241,7 +241,7 @@ from pyiceberg.expressions import And, EqualTo
 
 from . import merge
 
-USER_AGENT = "cancerOnIce/1.0 (+https://github.com/seandavi/cancer-on-ice)"
+USER_AGENT = "cancerbasemap/1.0 (+https://github.com/seandavi/cancer-basemap)"
 
 # AHRF release label -> (CSV zip URL, technical documentation zip URL). Only
 # the current release is populated; 2023-2024 and 2022-2023 are also
@@ -344,7 +344,7 @@ LEGACY_FIPS = frozenset({
 LEGACY_GEO_VINTAGE = 2010
 CURRENT_GEO_VINTAGE = 2020
 
-SENTINEL = "__CANCERONICE_NULL_SENTINEL__"
+SENTINEL = "__CANCERBASEMAP_NULL_SENTINEL__"
 
 # The cancer-relevant curated set (issue #39), restricted to fields NOT
 # sourced from AMA/AHA/ADA (see module docstring): (AHRF column, measure_id,

@@ -23,7 +23,7 @@ from test_places import (  # noqa: F401 -- fixtures
     rows,
 )
 
-from canceronice import contracts, places, release, schemas
+from cancerbasemap import contracts, places, release, schemas
 
 TABLES = ("measure.observation", "measure.definition")
 TODAY = date(2026, 10, 2)

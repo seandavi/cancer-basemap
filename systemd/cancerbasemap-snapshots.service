@@ -1,5 +1,5 @@
 [Unit]
-Description=cancerOnIce weekly snapshot landers: FDA MQSA + HRSA sites/HPSA (#107)
+Description=Cancer Basemap weekly snapshot landers: FDA MQSA + HRSA sites/HPSA (#107)
 OnFailure=ntfy-notify@%N.service
 
 [Service]

@@ -1,4 +1,4 @@
-// Catchment Lake Explorer — reads the live cancerOnIce catalog through
+// Cancer Basemap Explorer — reads the live Cancer Basemap catalog through
 // icegate, anonymously. Plain JS, no framework, no build step: this file is
 // served as-is. Ported from bioc-on-ice's explorer (#50).
 import { RECIPES, PROVENANCE_MATRIX_SQL } from "./recipes.js";
@@ -206,7 +206,7 @@ async function renderTable(ns, table) {
 
   // tabs
   const tabIds = ["overview", "columns", "snapshots"];
-  if (localStorage.getItem("canceronice_query_tab") !== "0") tabIds.push("query");
+  if (localStorage.getItem("cancerbasemap_query_tab") !== "0") tabIds.push("query");
   const tabsNav = document.createElement("div");
   tabsNav.className = "tabs";
   tabsNav.setAttribute("role", "tablist");
@@ -260,7 +260,7 @@ async function renderTable(ns, table) {
     note.className = "warn";
     note.textContent =
       "Rendering the actual rows needs a query engine, which this static page does not have. Run this PIVOT " +
-      "yourself, or use the Query tab above: rows are cancerOnIce releases, columns are sources, cells are " +
+      "yourself, or use the Query tab above: rows are Cancer Basemap releases, columns are sources, cells are " +
       "each source's own version string, and the current release is the lexicographically greatest one " +
       "(SPEC.md's release ordering).";
     overview.appendChild(note);
@@ -417,7 +417,7 @@ function renderRecipes() {
   const intro = document.createElement("p");
   intro.className = "muted";
   intro.textContent =
-    "Worked queries against the live cancerOnIce catalog. Each snippet is self-contained — paste it verbatim into desktop DuckDB.";
+    "Worked queries against the live Cancer Basemap catalog. Each snippet is self-contained — paste it verbatim into desktop DuckDB.";
   container.appendChild(intro);
 
   for (const r of RECIPES) {
@@ -450,9 +450,9 @@ function renderRecipes() {
   const cb = document.createElement("input");
   cb.type = "checkbox";
   cb.id = "query-flag";
-  cb.checked = localStorage.getItem("canceronice_query_tab") !== "0";
+  cb.checked = localStorage.getItem("cancerbasemap_query_tab") !== "0";
   cb.addEventListener("change", () => {
-    localStorage.setItem("canceronice_query_tab", cb.checked ? "1" : "0");
+    localStorage.setItem("cancerbasemap_query_tab", cb.checked ? "1" : "0");
   });
   label.appendChild(cb);
   label.append(" Enable the Query tab on table pages");

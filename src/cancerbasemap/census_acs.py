@@ -243,7 +243,7 @@ from pyiceberg.expressions import And, EqualTo, In
 
 from . import merge
 
-USER_AGENT = "cancerOnIce/1.0 (+https://github.com/seandavi/cancer-on-ice)"
+USER_AGENT = "cancerbasemap/1.0 (+https://github.com/seandavi/cancer-basemap)"
 BASE = "https://www2.census.gov/programs-surveys/acs/summary_file"
 
 # Detailed (B/C) table -> variable count, verified against the real header of

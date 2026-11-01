@@ -189,7 +189,7 @@ from pyiceberg.expressions import And, EqualTo
 
 from . import merge
 
-USER_AGENT = "cancerOnIce/1.0 (+https://github.com/seandavi/cancer-on-ice)"
+USER_AGENT = "cancerbasemap/1.0 (+https://github.com/seandavi/cancer-basemap)"
 # Census-tract boundary vintage each edition classifies (module docstring).
 GEO_VINTAGE = {"2019": 2010, "2015": 2010, "2025": 2020}
 
