@@ -1,12 +1,8 @@
 ---
 title: Releases
-description: Every Cancer Basemap release available now, the folders on R2 and the dated tags on Hugging Face, with each table's size and row count.
+description: Every Cancer Basemap release available now, read live from R2 and Hugging Face. Expand one for its tables, file sizes, row counts and download links.
 toc: false
 ---
-
-Every version available right now, read live from the data server and
-Hugging Face. Expand one to see its tables, with file sizes, row counts from
-its `manifest.json`, and download links.
 
 - **`latest/`** and the **dated folders** (`v{YYYY-MM-DD}/`, the newest of each of the last 12 months) are for querying in place: attach their `cancerbasemap.duckdb` or `read_parquet` a file. `restore.sql` builds a local copy (`duckdb cancerbasemap-local.duckdb < restore.sql`).
 - **Hugging Face tags** (`YYYY-MM-DD`) hold every release permanently. Download one with `hf download`, then query it locally, and cite the tag. See [Versions and citation](guides/versions-and-citation.qmd).
@@ -168,28 +164,38 @@ Loading releases…
     return d;
   }
 
-  // R2 renders as soon as it answers; a slow Hugging Face never holds it up.
-  // An empty or missing bucket listing (404) is "no releases yet", not an error.
-  async function main() {
-    const tags = releaseTags().catch(() => []);
+  // Each service fills its own section: one failing, or slow, never blocks the
+  // other. "No releases yet" means the service answered with nothing; any
+  // other failure (network error, 429, 5xx) is "Could not reach".
+  const unreachable = (service) => [el("p", { class: "text-danger" }, `Could not reach ${service} right now.`)];
+  const noReleases = () => [el("p", {}, "No releases yet.")];
+
+  async function r2Section() {
+    // A missing bucket listing (404) is an empty bucket.
     const listing = await getJson(DATA).catch((e) => (e.status === 404 ? { directories: [] } : Promise.reject(e)));
     const dated = listing.directories.filter((d) => /^v\d{4}-\d{2}-\d{2}\/$/.test(d)).sort().reverse();
     const folders = [...(listing.directories.includes("latest/") ? ["latest/"] : []), ...dated];
-    const hfBody = el("div", {}, "Loading Hugging Face tags…");
-    root.replaceChildren(
-      el("h2", { id: "r2" }, "On R2 (query in place)"),
-      ...(folders.length
-        ? folders.map((d) => release(d, d === "latest/" ? "the newest release" : "", () => r2Folder(d)))
-        : [el("p", {}, "No releases yet.")]),
-      el("h2", { id: "hugging-face" }, "On Hugging Face (download and cite)"),
-      hfBody,
-    );
-    const names = await tags;
-    hfBody.replaceChildren(...(names.length
-      ? names.map((t) => release(t, `· ${HF}@${t}`, () => hfRelease(t)))
-      : [el("p", {}, "No releases yet.")]));
+    return folders.length
+      ? folders.map((d) => release(d, d === "latest/" ? "the newest release" : "", () => r2Folder(d)))
+      : noReleases();
   }
-  main().catch((e) => root.replaceChildren(el("p", { class: "text-danger" }, `Couldn't load the release list: ${e.message}`)));
+
+  async function hfSection() {
+    const names = await releaseTags();
+    return names.length
+      ? names.map((t) => release(t, `· ${HF}@${t}`, () => hfRelease(t)))
+      : noReleases();
+  }
+
+  function section(title, id, service, load) {
+    const body = el("div", {}, "Loading…");
+    root.append(el("h2", { id }, title), body);
+    load().catch(() => unreachable(service)).then((nodes) => body.replaceChildren(...nodes));
+  }
+
+  root.replaceChildren();
+  section("On R2 (query in place)", "r2", "the data server", r2Section);
+  section("On Hugging Face (download and cite)", "hugging-face", "Hugging Face", hfSection);
 })();
 </script>
 ```

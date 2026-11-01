@@ -41,11 +41,13 @@ conn = {
 
 viewof sql = Inputs.textarea({
   label: "SQL",
-  value: `SELECT source, source_release, value_status, count(*) AS n
+  value: `SELECT geo_id, period_start, value, value_status
 FROM measure.observation
-GROUP BY ALL
-ORDER BY n DESC
-LIMIT 10;`,
+WHERE source = 'PLACES' AND source_release = '2025'
+  AND measure_id = 'PLACES:MAMMOUSE:age_adjusted'
+  AND geo_id LIKE 'county:08%'
+ORDER BY geo_id
+LIMIT 100;`,
   rows: 8,
   width: "100%",
   monospace: true,

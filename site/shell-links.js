@@ -6,9 +6,8 @@
 // examples (the catalog the bundle replaces) are skipped, the Shell can't ATTACH one.
 window.basemapShellUrl = function (sql) {
   const swap = (s) => s.replace(/[ \-;~]/g, (c) => ({ " ": "-", "-": " ", ";": "~", "~": ";" })[c]);
-  // ponytail: strips `--` comments without parsing strings; no example has `--` inside a literal.
-  const stmts = sql.replace(/--[^\n]*/g, "").split(/;\s*(?:\n|$)/)
-    .map((s) => s.replace(/\s+/g, " ").trim()).filter(Boolean);
+  // Statements go through as written: comments and whitespace may sit inside string literals.
+  const stmts = sql.split(/;\s*(?:\n|$)/).map((s) => s.trim()).filter(Boolean);
   if (!/\bATTACH\b/i.test(sql)) {
     stmts.unshift(
       "ATTACH 'https://basemap.cancerdatasci.org/data/latest/cancerbasemap.duckdb' AS basemap (READ_ONLY)",

@@ -12,7 +12,7 @@ They differ in how long they last and how you use them
 | Version | Where | Changes? | Kept | Use it by |
 |---|---|---|---|---|
 | `latest/` | `https://basemap.cancerdatasci.org/data/latest/` | with each release | always the newest | querying in place |
-| Dated | `https://basemap.cancerdatasci.org/data/v{YYYY-MM-DD}/` | never | the newest release of each of the last 12 months | querying in place |
+| Dated | `https://basemap.cancerdatasci.org/data/v{YYYY-MM-DD}/` | never | the newest release of each of the 12 newest months that had one | querying in place |
 | Tag | Hugging Face dataset `seandavis/cancerbasemap`, git tag `YYYY-MM-DD` | never | permanently, every release | downloading, then querying locally |
 
 A release is cut on the 1st of each month, and by hand when a correction or a
@@ -23,17 +23,18 @@ also pushed to Hugging Face and tagged with its date, and tags are never
 deleted. A tag is the version to cite. Download one, then query it locally.
 
 ::: callout-note
-Twelve months stay on R2, so an analysis from last year's report re-runs in
-place against its pinned URL. Anything older is on Hugging Face only. A
-mid-month correction replaces its month on R2, but the release it replaced
-keeps its tag.
+R2 keeps the newest release of each of the 12 newest months that had a
+release. A release that a same-month correction replaced is deleted 7 days
+after the correction. So a dated folder is a short-to-medium-term pin, not an
+archive; anything older, or replaced, is on Hugging Face only, where the
+release keeps its tag.
 :::
 
 ## Which one to use
 
 - **Exploring, or building something that should track the sources:** use `latest/`.
-- **An analysis you'll rerun within the year:** pin a dated folder.
-- **A paper, a shared pipeline, an annual report, or anything you'll cite:** download the tag.
+- **An analysis you'll rerun soon:** pin a dated folder.
+- **A paper, a report, a shared pipeline, or anything that must stay reproducible or that you'll cite:** download the Hugging Face tag `YYYY-MM-DD`.
 
 ## Pin a dated folder
 
@@ -45,8 +46,10 @@ ATTACH 'https://basemap.cancerdatasci.org/data/v2026-12-01/cancerbasemap.duckdb'
 ```
 
 To see which dates are available, open [Releases](../releases.qmd) or the
-[folder listing](https://basemap.cancerdatasci.org/data/). Folders older than
-12 months are deleted, so use a tag for anything longer.
+[folder listing](https://basemap.cancerdatasci.org/data/). A dated folder can
+disappear: when its month ages out of the 12 newest, or 7 days after a
+same-month correction replaces it. Use a tag for anything that must stay
+reproducible.
 
 ## Use a tag
 
@@ -78,7 +81,7 @@ with HTTP 429. For in-place queries use `latest/` or a dated folder.
 
 Cite the release you used by its tag (e.g. `seandavis/cancerbasemap@2026-12-01`),
 and its DOI if the dataset page for that tag shows one. A tag is permanent
-even after its R2 folder ages out.
+even after its R2 folder is deleted.
 
 If you used a dated folder, its date is the tag. Also record the `release` and
 `git_sha` from its `manifest.json`. Each table also names the upstream source
