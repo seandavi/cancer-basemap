@@ -277,6 +277,12 @@ before write:
 The invariant is **no suppressed cell ever reads as a number**, and no reader
 has to parse a sentinel (`"*"`, `"3 or fewer"`, `-1`) to find out.
 
+Suppression itself is the source's. Every source publishes aggregates it has
+already suppressed; Cancer Basemap never re-suppresses or clears what a source
+chose to publish. The invariant is about `value`: when `value_status !=
+'reported'` it is NULL. Companion columns (`lower`, `upper`, `numerator`,
+`denominator`) carry whatever the source published for that cell (ADR-0001).
+
 ### measure.definition
 
 ```
