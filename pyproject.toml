@@ -8,12 +8,10 @@ dependencies = [
     "pyiceberg[sql-sqlite,pyarrow]>=0.9",
     "sqlglot>=30.18.0",
     "xlrd>=2.0.2",
-    # ADR-0013 (bioc) / dataset releases: cdsci.lake builds, verifies, and indexes releases.
-    "cdsci-lake",
+    # publish.py serves http(s) reads from the bundle dir while building cancerbasemap.duckdb;
+    # already installed by pyiceberg, declared because we import it.
+    "fsspec",
 ]
-
-[tool.uv.sources]
-cdsci-lake = { git = "https://github.com/seandavi/cdsci-lake", tag = "v0.3.1" }
 
 [project.scripts]
 cancerbasemap = "cancerbasemap.__main__:main"

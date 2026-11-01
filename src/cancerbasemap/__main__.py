@@ -1,6 +1,7 @@
 import argparse
+from pathlib import Path
 
-from . import catalog, census_gazetteer, merge, schemas
+from . import catalog, census_gazetteer, merge, publish, schemas
 
 
 def _print(counts):
@@ -21,6 +22,15 @@ def main():
                         "its current sort_by / row-group-limit properties (#120)")
     rw.add_argument("identifier", nargs="?", help="table to rewrite, e.g. measure.observation")
     rw.add_argument("--all", action="store_true", help="rewrite every declared table")
+
+    # core: release bundle (ADR-0001, #171)
+    pb = sub.add_parser("publish", help="build a release bundle (Parquet, views.sql, "
+                        "manifest.json) from the live catalog; uploads nothing")
+    pb.add_argument("out", help="directory to write the bundle into")
+    pb.add_argument("--base-url", dest="base_url", default=publish.DEFAULT_BASE_URL,
+                    help="where the bundle's views will read it from "
+                         "(default: %(default)s; a dated folder passes its own /data/v{date})")
+    pb.add_argument("--only", nargs="+", help="publish only these tables, e.g. measure.observation")
 
     # --- raw: census gazetteer ---
     gz = sub.add_parser("gazetteer", help="land one Census Gazetteer vintage's county + "
@@ -277,6 +287,10 @@ def main():
                     help="ISO date to record as the version (default: today)")
 
     args = p.parse_args()
+
+    if args.cmd == "publish":
+        publish.publish(publish.connect(), Path(args.out), args.base_url, args.only)
+        return
 
     cat = catalog()
     if args.cmd == "init":
