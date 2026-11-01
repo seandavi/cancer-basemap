@@ -89,6 +89,24 @@ test("/data/ range request record", async () => {
   assert.equal(r.cs_cookie, null);
 });
 
+test("HEAD sends no bytes; ranged GET counts the range", async () => {
+  const [head] = await records("/data/latest/a.parquet", {}, "HEAD");
+  assert.equal(head.sc_bytes, 0);
+  assert.equal(head.sc_content_len, "10");
+  const [ranged] = await records("/data/latest/a.parquet", { range: "bytes=2-5" });
+  assert.equal(ranged.sc_bytes, 4);
+});
+
+test("cookie and authorization values never reach the record", async () => {
+  const [r] = await records("/data/latest/a.parquet", {
+    cookie: "session=s3cret-cookie",
+    authorization: "Bearer s3cret-token",
+  });
+  const json = JSON.stringify(r);
+  assert.ok(!json.includes("s3cret-cookie"));
+  assert.ok(!json.includes("s3cret-token"));
+});
+
 test("/data/ 404 record", async () => {
   const [r] = await records("/data/latest/nope.parquet");
   assert.equal(r.sc_status, 404);

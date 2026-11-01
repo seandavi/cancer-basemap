@@ -14,8 +14,12 @@
  * on. Unknown is recorded as null rather than guessed -- a fabricated zero
  * would silently understate transfer volume forever.
  */
-function bytesOf(res: Response | null, size: number | null): number | null {
+function bytesOf(req: Request, res: Response | null, size: number | null): number | null {
   if (!res) return null;
+  // A HEAD sends no body, whatever Content-Length says (that is the
+  // representation length, kept in sc_content_len). Departs from bioc-edge,
+  // which counts Content-Length on HEAD; monode#67 follow-up suggests it match.
+  if (req.method === "HEAD") return 0;
   const len = res.headers.get("content-length");
   if (len) return Number(len);
   const r = rangeOf(res);
@@ -74,7 +78,7 @@ export function accessRecord(
       x_edge_location: cf?.colo ?? null,
       // Body bytes. CloudFront counts headers too, so this runs slightly low
       // against sc_bytes -- a known, constant-ish offset rather than a gap.
-      sc_bytes: bytesOf(res, size),
+      sc_bytes: bytesOf(req, res, size),
       c_ip: req.headers.get("cf-connecting-ip"),
       cs_method: req.method,
       cs_host: url.host,
