@@ -1,10 +1,16 @@
 project:
   type: website
   output-dir: _site
+  resources:
+    - shell-links.js
 
 website:
   title: "Cancer Basemap"
   site-url: https://basemap.cancerdatasci.org
+  favicon: favicon.svg
+  # The one GA4 property shared by every site.
+  google-analytics: "G-KLLV1GCF4E"
+  search: true
   page-footer:
     left: "Code: [MIT](https://github.com/seandavi/cancer-basemap/blob/main/LICENSE). Data: each source keeps its own terms — see [Sources](/sources.qmd)."
     # Bump this string by hand alongside catalog-release below whenever the
@@ -13,8 +19,6 @@ website:
     right: "Built against catalog release 2026.09."
   navbar:
     left:
-      - text: Home
-        href: index.qmd
       - text: Start here
         href: start/index.qmd
       - text: Concepts
@@ -25,15 +29,24 @@ website:
         href: sources.qmd
       - text: Recipes
         href: recipes/index.qmd
+      - text: Releases
+        href: releases.qmd
+      - text: Playground
+        href: playground.qmd
     right:
       - text: "Explorer ↗"
         href: https://canceronice-explorer.seandavi.workers.dev
         target: _blank
       - icon: github
-        text: "GitHub ↗"
+        aria-label: GitHub repository
         href: https://github.com/seandavi/cancer-basemap
         target: _blank
   sidebar:
+    - title: "Data"
+      contents:
+        - releases.qmd
+        - playground.qmd
+        - guides/versions-and-citation.qmd
     - title: "Start here"
       contents:
         - start/index.qmd
@@ -62,8 +75,21 @@ website:
 
 format:
   html:
-    theme: cosmo
+    # bioc-infrastructure's archify theme on cosmo, in glacier blue and ember
+    # orange so the site doesn't read as omicidx or bioc-on-ice (theme/*.scss).
+    theme:
+      light: [cosmo, theme/archify.scss, theme/basemap-light.scss]
+      dark: [cosmo, theme/archify.scss, theme/basemap-dark.scss]
+    respect-user-color-scheme: true
+    # Quarto's WCAG-AA highlight style; switches to a11y-dark in dark mode.
+    highlight-style: a11y
+    grid:
+      sidebar-width: 250px
+      body-width: 880px
+      margin-width: 220px
     css: styles.css
+    # "Open in DuckDB Shell" under every SQL example.
+    include-after-body: shell-links.html
     toc: true
     toc-depth: 2
     link-external-icon: true
@@ -78,7 +104,6 @@ format:
         <script type="importmap">
         { "imports": { "apache-arrow": "https://cdn.jsdelivr.net/npm/apache-arrow@17.0.0/+esm" } }
         </script>
-        <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 
 # freeze: auto means Quarto caches each .qmd's *rendered* code output (not the
 # .qmd source) under _freeze/ and commits it. A CI render with no network

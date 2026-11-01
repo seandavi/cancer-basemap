@@ -1,0 +1,104 @@
+---
+title: SQL playground
+description: Run SQL against the latest Cancer Basemap release in your browser with DuckDB-Wasm. Nothing to install.
+---
+
+Edit the query and press **Run**. It runs in your browser with
+[DuckDB-Wasm](https://duckdb.org/docs/api/wasm/overview), against
+`latest/` attached as `basemap` (and selected with `USE basemap`, so
+`measure.observation` works as well as `basemap.measure.observation`). The
+first run downloads DuckDB itself, a few MB. Until the first release is
+published the attach fails and the box shows the error.
+
+Queries that filter and use `LIMIT` are fast, because DuckDB fetches only the
+parts of each Parquet file it needs. Full scans of the big tables
+(`measure.observation` has tens of millions of rows) are slow and can run out
+of browser memory. For those, use DuckDB on your own machine
+([Versions and citation](guides/versions-and-citation.qmd)).
+
+```{ojs}
+//| echo: false
+duckdb = import("https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.33.1-dev57.0/+esm")
+
+conn = {
+  const bundle = await duckdb.selectBundle(duckdb.getJsDelivrBundles());
+  const workerUrl = URL.createObjectURL(
+    new Blob([`importScripts("${bundle.mainWorker}");`], { type: "text/javascript" })
+  );
+  const db = new duckdb.AsyncDuckDB(new duckdb.VoidLogger(), new Worker(workerUrl));
+  await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
+  // Read byte ranges only. By default DuckDB-Wasm downloads each whole
+  // Parquet file before querying it. All three flags are needed: leaving
+  // forceFullHTTPReads unset breaks every open.
+  await db.open({
+    filesystem: { reliableHeadRequests: true, allowFullHTTPReads: false, forceFullHTTPReads: false }
+  });
+  const c = await db.connect();
+  await c.query("ATTACH 'https://basemap.cancerdatasci.org/data/latest/cancerbasemap.duckdb' AS basemap (READ_ONLY)");
+  await c.query("USE basemap");
+  return c;
+}
+
+viewof sql = Inputs.textarea({
+  label: "SQL",
+  value: `SELECT geo_id, period_start, value, value_status
+FROM measure.observation
+WHERE source = 'PLACES' AND source_release = '2025'
+  AND measure_id = 'PLACES:MAMMOUSE:age_adjusted'
+  AND geo_id LIKE 'county:08%'
+ORDER BY geo_id
+LIMIT 100;`,
+  rows: 8,
+  width: "100%",
+  monospace: true,
+  submit: "Run"
+})
+
+result = {
+  const t0 = performance.now();
+  try {
+    const table = await conn.query(sql);
+    // int64 columns arrive as BigInt, which the table view can't format.
+    const rows = table.toArray().map((r) =>
+      Object.fromEntries(Object.entries(r.toJSON()).map(([k, v]) =>
+        [k, typeof v === "bigint" ? Number(v) : v]))
+    );
+    return { rows, seconds: (performance.now() - t0) / 1000 };
+  } catch (e) {
+    return { error: e.message };
+  }
+}
+
+result.error
+  ? html`<div class="alert alert-danger" role="alert"><pre class="mb-0">${result.error}</pre></div>`
+  : html`<p class="small" id="playground-status">${result.rows.length} rows in ${result.seconds.toFixed(1)} s ·
+      <a href="${window.basemapShellUrl(sql)}" target="_blank" rel="noopener">Open in DuckDB Shell ↗</a></p>`
+
+Inputs.table(result.rows ?? [], { rows: 15 })
+```
+
+## Queries to try
+
+Copy one into the box, or open it in the DuckDB Shell.
+
+```sql
+-- Every table in the database
+SELECT schema_name, view_name
+FROM duckdb_views()
+WHERE database_name = 'basemap' AND NOT internal
+ORDER BY 1, 2;
+```
+
+```sql
+-- A cell the source did not report never reads as a number
+SELECT value_status, count(*) AS n, count(value) AS with_value
+FROM measure.observation
+GROUP BY value_status
+ORDER BY n DESC;
+```
+
+```sql
+-- The provenance of this release
+SELECT release, published_at, git_sha
+FROM read_json('https://basemap.cancerdatasci.org/data/latest/manifest.json');
+```

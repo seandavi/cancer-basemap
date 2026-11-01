@@ -3,6 +3,11 @@ title: "Cancer Basemap"
 jupyter: coi-docs
 ---
 
+[Browse the releases](releases.qmd){.btn .btn-primary .me-2 .mb-2}
+[Try it in your browser](playground.qmd){.btn .btn-outline-primary .me-2 .mb-2}
+[Cite a release](guides/versions-and-citation.qmd){.btn .btn-outline-primary .me-2 .mb-2}
+[View on GitHub](https://github.com/seandavi/cancer-basemap){.btn .btn-link .mb-2}
+
 Cancer Basemap publishes population cancer data — screening, risk factors,
 the social and environmental context around them, and the places people get
 care — as Apache Iceberg tables keyed on geography and time. Every release
@@ -228,6 +233,10 @@ Plot.plot({
 
 ## Where to go next
 
+- **Want the data files?** [Releases](releases.qmd) lists every release on R2
+  and Hugging Face; the [playground](playground.qmd) queries the latest one in
+  your browser, and [Versions and citation](guides/versions-and-citation.qmd)
+  says which version to pin and cite.
 - **New here?** [Start here](start/index.qmd) has the exact ATTACH statement
   for R, SAS, SEER\*Stat, Python, and the DuckDB CLI.
 - **Building a catchment report?** [Concepts](concepts/index.qmd) covers the

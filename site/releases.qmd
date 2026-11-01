@@ -1,0 +1,201 @@
+---
+title: Releases
+description: Every Cancer Basemap release available now, read live from R2 and Hugging Face. Expand one for its tables, file sizes, row counts and download links.
+toc: false
+---
+
+- **`latest/`** and the **dated folders** (`v{YYYY-MM-DD}/`, the newest of each of the last 12 months) are for querying in place: attach their `cancerbasemap.duckdb` or `read_parquet` a file. `restore.sql` builds a local copy (`duckdb cancerbasemap-local.duckdb < restore.sql`).
+- **Hugging Face tags** (`YYYY-MM-DD`) hold every release permanently. Download one with `hf download`, then query it locally, and cite the tag. See [Versions and citation](guides/versions-and-citation.qmd).
+
+::: {#releases}
+Loading releases…
+:::
+
+```{=html}
+<script>
+(() => {
+  // Fetches stay same-origin (works under `wrangler dev`); copyable snippets
+  // advertise the one data host the bundle views hard-code.
+  const DATA = new URL("/data/", location.href).href;
+  const PUBLIC = "https://basemap.cancerdatasci.org/data/";
+  // Every release is tagged on Hugging Face by its date (ADR-0001). Until
+  // the first tag exists the page says there are no releases yet.
+  const HF = "seandavis/cancerbasemap";
+  const root = document.getElementById("releases");
+
+  const el = (tag, attrs = {}, ...children) => {
+    const e = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+    e.append(...children);
+    return e;
+  };
+  const link = (href, text) => el("a", { href }, text);
+  const getJson = async (url) => {
+    const r = await fetch(url, { headers: { accept: "application/json" } });
+    if (!r.ok) throw Object.assign(new Error(`${r.status} for ${url}`), { status: r.status });
+    return r.json();
+  };
+  const bytes = (n) => {
+    const u = ["B", "KB", "MB", "GB", "TB"];
+    const i = n > 0 ? Math.min(Math.floor(Math.log(n) / Math.log(1024)), 4) : 0;
+    return `${(n / 1024 ** i).toFixed(i ? 1 : 0)} ${u[i]}`;
+  };
+  // Every manifest field the page reads, in one place: the field names get
+  // reconciled with the bundle builder (#189) here. row_count/bytes may be null.
+  const manifestOf = (m) => ({
+    publishedAt: m.published_at,
+    // the builder's commit; null outside a checkout, and only ever a hex SHA in a link
+    gitSha: /^[0-9a-f]{7,40}$/.test(m.git_sha ?? "") ? m.git_sha : null,
+    tables: m.tables.map((t) => ({
+      schema: t.schema, table: t.table, rows: t.row_count ?? null, bytes: t.bytes ?? null,
+    })),
+  });
+  // A table's file, relative to its release: annotation/gene.parquet.
+  const fileOf = (t) => `${t.schema}/${t.table}.parquet`;
+  // An href for a bucket key: each path segment URL-encoded.
+  const href = (key) => DATA + key.split("/").map(encodeURIComponent).join("/");
+
+  function copyable(text) {
+    const btn = el("button", { type: "button", class: "btn btn-sm btn-outline-secondary ms-2" }, "Copy");
+    btn.addEventListener("click", async () => {
+      await navigator.clipboard.writeText(text);
+      btn.textContent = "Copied";
+      setTimeout(() => (btn.textContent = "Copy"), 1500);
+    });
+    return el("div", { class: "d-flex align-items-start my-2" },
+      el("pre", { class: "mb-0 flex-grow-1" }, el("code", {}, text)), btn);
+  }
+
+  // manifest: manifestOf(...); sizes: {file: bytes}; fileUrl: file -> href.
+  function details(manifest, sizes, fileUrl) {
+    const rows = manifest.tables.map((t) => {
+      const f = fileOf(t);
+      return el("tr", {},
+        el("td", {}, el("code", {}, `${t.schema}.${t.table}`)),
+        el("td", { class: "text-end" }, sizes[f] === undefined ? "–" : bytes(sizes[f])),
+        el("td", { class: "text-end" }, t.rows === null ? "–" : t.rows.toLocaleString("en-US")),
+        el("td", {}, link(fileUrl(f), f)));
+    });
+    const total = manifest.tables.reduce((s, t) => s + (sizes[fileOf(t)] ?? 0), 0);
+    return [
+      el("p", { class: "small" },
+        manifest.publishedAt ? `Published ${manifest.publishedAt} · ` : "",
+        ...(manifest.gitSha
+          ? ["built from ", link(`https://github.com/seandavi/cancer-basemap/commit/${manifest.gitSha}`,
+              manifest.gitSha.slice(0, 7)), " · "]
+          : []),
+        `${manifest.tables.length} tables, ${bytes(total)}`),
+      el("div", { class: "table-responsive" },
+        el("table", { class: "table table-sm" },
+          el("thead", {}, el("tr", {},
+            el("th", { scope: "col" }, "Table"), el("th", { scope: "col", class: "text-end" }, "Size"),
+            el("th", { scope: "col", class: "text-end" }, "Rows"), el("th", { scope: "col" }, "File"))),
+          el("tbody", {}, ...rows))),
+    ];
+  }
+
+  // Sizes come from the manifest's `bytes`; tables without one fall back to
+  // the bucket listing of their schema folder.
+  async function sizesOf(dir, tables) {
+    const sizes = Object.fromEntries(
+      tables.filter((t) => t.bytes !== null).map((t) => [fileOf(t), t.bytes]));
+    const missing = [...new Set(tables.filter((t) => t.bytes === null).map((t) => t.schema))];
+    const listings = await Promise.all(
+      missing.map((s) => getJson(href(`${dir}${s}/`)).catch(() => ({ files: [] }))));
+    for (const f of listings.flatMap((l) => l.files)) sizes[f.key.slice(dir.length)] ??= f.size;
+    return sizes;
+  }
+
+  async function r2Folder(dir) {
+    const [listing, manifest] = await Promise.all([
+      getJson(href(dir)).catch(() => ({ files: [] })),
+      getJson(href(`${dir}manifest.json`)).then(manifestOf),
+    ]);
+    const sizes = await sizesOf(dir, manifest.tables);
+    const extras = ["cancerbasemap.duckdb", "views.sql", "restore.sql", "manifest.json", "gate.json"]
+      .filter((n) => listing.files.some((f) => f.key === dir + n));
+    return [
+      el("p", { class: "small" }, "Files: ",
+        ...extras.flatMap((n, i) => [i ? " · " : "", link(href(dir + n), n)]),
+        extras.length ? " · " : "", link(href(dir), "folder listing")),
+      copyable(`ATTACH '${PUBLIC}${dir}cancerbasemap.duckdb' AS basemap (READ_ONLY);`),
+      ...(extras.includes("restore.sql")
+        ? [copyable(`curl -sO ${PUBLIC}${dir}restore.sql && duckdb cancerbasemap-local.duckdb < restore.sql`)]
+        : []),
+      ...details(manifest, sizes, (f) => href(dir + f)),
+    ];
+  }
+
+  async function hfRelease(tag) {
+    const tree = await getJson(`https://huggingface.co/api/datasets/${HF}/tree/${tag}?recursive=true`);
+    const sizes = Object.fromEntries(tree.filter((f) => f.type === "file").map((f) => [f.path, f.size]));
+    const base = `https://huggingface.co/datasets/${HF}/resolve/${tag}/`;
+    const manifest = manifestOf(await getJson(base + "manifest.json"));
+    return [
+      el("p", { class: "small" },
+        link(`https://huggingface.co/datasets/${HF}/tree/${tag}`, "Browse on Hugging Face"),
+        " · ", link(base + "manifest.json", "manifest.json")),
+      copyable(`hf download ${HF} --repo-type dataset --revision ${tag} --local-dir cancerbasemap-${tag}`),
+      ...details(manifest, sizes, (f) => base + f),
+    ];
+  }
+
+  // Release tags, newest first. The search endpoint answers 200 whether or
+  // not the repo exists; refs would 401 (and log an error) until it does.
+  async function releaseTags() {
+    const found = await getJson(`https://huggingface.co/api/datasets?author=${HF.split("/")[0]}&search=${HF.split("/")[1]}`);
+    if (!found.some((d) => d.id === HF)) return [];
+    const refs = await getJson(`https://huggingface.co/api/datasets/${HF}/refs`);
+    return refs.tags.map((t) => t.name).filter((n) => /^\d{4}-\d{2}-\d{2}$/.test(n)).sort().reverse();
+  }
+
+  // A <details> whose body loads the first time it's opened.
+  function release(label, note, load) {
+    const body = el("div", { class: "ps-3" }, "Loading…");
+    const d = el("details", { class: "mb-2" },
+      el("summary", {}, el("strong", {}, label), note ? ` ${note}` : ""), body);
+    let loaded = false;
+    d.addEventListener("toggle", async () => {
+      if (!d.open || loaded) return;
+      loaded = true;
+      try { body.replaceChildren(...(await load())); }
+      catch (e) { body.replaceChildren(el("p", { class: "text-danger" }, `Couldn't load: ${e.message}`)); }
+    });
+    return d;
+  }
+
+  // Each service fills its own section: one failing, or slow, never blocks the
+  // other. "No releases yet" means the service answered with nothing; any
+  // other failure (network error, 429, 5xx) is "Could not reach".
+  const unreachable = (service) => [el("p", { class: "text-danger" }, `Could not reach ${service} right now.`)];
+  const noReleases = () => [el("p", {}, "No releases yet.")];
+
+  async function r2Section() {
+    // A missing bucket listing (404) is an empty bucket.
+    const listing = await getJson(DATA).catch((e) => (e.status === 404 ? { directories: [] } : Promise.reject(e)));
+    const dated = listing.directories.filter((d) => /^v\d{4}-\d{2}-\d{2}\/$/.test(d)).sort().reverse();
+    const folders = [...(listing.directories.includes("latest/") ? ["latest/"] : []), ...dated];
+    return folders.length
+      ? folders.map((d) => release(d, d === "latest/" ? "the newest release" : "", () => r2Folder(d)))
+      : noReleases();
+  }
+
+  async function hfSection() {
+    const names = await releaseTags();
+    return names.length
+      ? names.map((t) => release(t, `· ${HF}@${t}`, () => hfRelease(t)))
+      : noReleases();
+  }
+
+  function section(title, id, service, load) {
+    const body = el("div", {}, "Loading…");
+    root.append(el("h2", { id }, title), body);
+    load().catch(() => unreachable(service)).then((nodes) => body.replaceChildren(...nodes));
+  }
+
+  root.replaceChildren();
+  section("On R2 (query in place)", "r2", "the data server", r2Section);
+  section("On Hugging Face (download and cite)", "hugging-face", "Hugging Face", hfSection);
+})();
+</script>
+```

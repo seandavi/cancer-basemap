@@ -1,0 +1,26 @@
+/*-- scss:defaults --*/
+// Glacier and ember (ADR-0001 § The site): slate-50 canvas, sky-700 primary
+// (#0369a1), orange-700 accent (#c2410c). Text colours are WCAG AA (>= 4.5:1)
+// on both the canvas and the white panel; see the contrast table in #176.
+$body-bg: #f8fafc;
+$body-color: #0f172a;
+$primary: #0369a1;
+$link-color: #0369a1;
+$border-color: #e2e8f0;
+$text-muted: #475569;
+$navbar-bg: #0c4a6e;
+$navbar-fg: #e0f2fe;
+$navbar-hl: #ffffff;
+$sidebar-bg: transparent;
+$footer-bg: transparent;
+$code-block-bg: #ffffff;
+$code-color: #0369a1;
+
+/*-- scss:rules --*/
+:root {
+  --ax-bg: #f8fafc; --ax-panel: #ffffff; --ax-border: #e2e8f0; --ax-grid-dot: #dbe4ee;
+  --ax-text: #0f172a; --ax-muted: #475569; --ax-faint: #64748b;
+  --ax-primary: #0369a1; --ax-accent: #c2410c;
+  --ax-emerald: #059669; --ax-amber: #d97706; --ax-rose: #e11d48; --ax-orange: #c2410c; --ax-slate: #64748b;
+  --ax-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(3, 105, 161, 0.07);
+}
