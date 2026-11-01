@@ -81,12 +81,18 @@ month; the push comes before the upload; and the retention rule below.
 ### The gate
 
 `cancerbasemap gate` checks each bundle against the previous published release, as
-biocOnIce's does, and adds the hard gate this repo exists for: **in `measure.observation`,
-`value`, `lower`, `upper`, `numerator` and `denominator` are all NULL when
-`value_status != 'reported'`** (the column list of #162), checked on the Parquet users
-get. Keys and metadata (`geo_vintage`, `interval_level`) are not measured numbers and
-are not checked. A table that later gains a `value_status` names its measured columns
-in the gate. A release that fails is not uploaded or archived.
+biocOnIce's does, and adds the hard gate this repo exists for, checked on the Parquet
+users get: **in `measure.observation`, `value` is NULL whenever `value_status !=
+'reported'`**. A release that fails is not uploaded or archived.
+
+**Amended 2026-11-01 (owner):** every source publishes aggregates it has already
+suppressed, so this repo never re-suppresses. The gate does not NULL-check `lower`,
+`upper`, `numerator` or `denominator` (an earlier draft did, following #162): those carry
+what the source itself published for the cell, and clearing them would drop public
+numbers. The first real bundle has such rows (ACS `suppressed_small_count` with
+numerator and denominator, 17,735 rows; FARA `not_available` with a denominator, 75,622),
+and they stand. What the gate guards is presentation: a cell the source did not report
+never reads as a number in `value`.
 
 ### Cadence
 
