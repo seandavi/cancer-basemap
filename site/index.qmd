@@ -29,7 +29,7 @@ that page.
 #| echo: false
 #| output: false
 # Build-time extract: ~6 cancer-relevant PLACES county measures, releases
-# 2024 and 2025, written to data/home_map.json for the {ojs} map below to
+# 2024 and 2025, written to extracts/home_map.json for the {ojs} map below to
 # read. This is real catalog output, not a fixture — if a release changes
 # these numbers, the next render of this page changes too.
 import json
@@ -104,11 +104,11 @@ payload = {
 }
 
 import os
-os.makedirs("data", exist_ok=True)
-with open("data/home_map.json", "w") as f:
+os.makedirs("extracts", exist_ok=True)
+with open("extracts/home_map.json", "w") as f:
     json.dump(payload, f, separators=(",", ":"))
-print(f"wrote data/home_map.json: {len(rows)} rows, "
-      f"{os.path.getsize('data/home_map.json') / 1024:.0f} KB")
+print(f"wrote extracts/home_map.json: {len(rows)} rows, "
+      f"{os.path.getsize('extracts/home_map.json') / 1024:.0f} KB")
 ```
 
 ::: {.callout-note}
@@ -139,7 +139,7 @@ print(f"wrote data/home_map.json: {len(rows)} rows, "
 
 ```{ojs}
 //| echo: false
-mapData = FileAttachment("data/home_map.json").json()
+mapData = FileAttachment("extracts/home_map.json").json()
 ```
 
 ```{ojs}

@@ -1,0 +1,40 @@
+# Cloudflare Worker: the whole public Cancer Basemap site (#175), ported from
+# bioc-on-ice site/.
+#   basemap.cancerdatasci.org/        -> pages (Quarto ../site/_site/, Workers static assets)
+#   basemap.cancerdatasci.org/data/*  -> `data-cancerbasemap` R2 bucket, `/data` stripped
+# ADR-0001: `/data/` belongs to the bucket and never redirects (release bundle
+# views and Hugging Face copies hard-code its URLs). Range requests + CORS
+# make it the anonymous, credential-free read surface for DuckDB.
+#
+# Deploy (needs `wrangler login`). Render the pages first:
+#   quarto render site && cd worker && npm ci && npx wrangler deploy
+# custom_domain auto-creates the DNS record on deploy (cancerdatasci.org is
+# Cloudflare-managed).
+
+name = "data-cancerbasemap"
+main = "src/index.ts"
+compatibility_date = "2025-03-14"
+# Per-request access record lands beside the account's http_requests Logpush
+# (ADR-0001 § Logging; the record itself is #177).
+logpush = true
+
+[assets]
+directory = "../site/_site"
+binding = "ASSETS"
+not_found_handling = "404-page"
+# The worker routes first: `/data/*` is always a bucket key, even where a
+# rendered page would collide with it.
+run_worker_first = true
+
+[[r2_buckets]]
+binding = "DATA_BUCKET"
+bucket_name = "data-cancerbasemap"
+remote = true  # `wrangler dev` reads the real bucket
+
+[[analytics_engine_datasets]]
+binding = "USAGE"
+dataset = "data_cancerbasemap_usage"
+
+[[routes]]
+pattern = "basemap.cancerdatasci.org"
+custom_domain = true
