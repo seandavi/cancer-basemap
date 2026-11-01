@@ -63,12 +63,13 @@ export default {
         base,
       );
       ctx.waitUntil(logUsage(env, request, key || "/", response.status, 0));
-      return response;
+      return request.method === "HEAD" ? new Response(null, response) : response;
     }
 
     // Check if this is a range request — we need the object size first
     // to parse the range, so do a head-style get first if range is present.
-    const rangeHeader = request.headers.get("range");
+    // Range applies to GET only (RFC 9110 §14.2): a HEAD answers for the whole object.
+    const rangeHeader = request.method === "GET" ? request.headers.get("range") : null;
 
     // Build R2GetOptions
     const onlyIf = conditionalHeaders(request.headers);

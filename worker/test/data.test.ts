@@ -72,3 +72,20 @@ test("pages go to ASSETS, with the 307 made a 301", async () => {
   assert.equal(assetCalls, 1);
   assert.equal(res.status, 301);
 });
+
+test("HEAD has no body: directory listing and object", async () => {
+  const dir = await get("/data/", {}, "HEAD");
+  assert.equal(dir.status, 200);
+  assert.equal(dir.body, null);
+  const obj = await get("/data/latest/a.parquet", {}, "HEAD");
+  assert.equal(obj.status, 200);
+  assert.equal(obj.body, null);
+  assert.equal(obj.headers.get("content-length"), "10");
+});
+
+test("HEAD ignores Range: 200 for the whole object", async () => {
+  const res = await get("/data/latest/a.parquet", { range: "bytes=2-4" }, "HEAD");
+  assert.equal(res.status, 200);
+  assert.equal(res.headers.get("content-length"), "10");
+  assert.equal(res.headers.get("content-range"), null);
+});
