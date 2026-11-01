@@ -96,17 +96,12 @@ def test_selects_drop_history_only_for_type_2_tables():
         "measure.cancer_site_group", "facility.site"}
 
 
-def test_a_failed_publish_leaves_no_manifest_from_an_earlier_run(con, tmp_path, monkeypatch):
+def test_a_non_empty_output_directory_is_refused(con, tmp_path):
     out = tmp_path / "release"
-    out.mkdir()
-    (out / "manifest.json").write_text('{"tables": []}')
-
-    def killed(*a):
-        raise KeyboardInterrupt
-    monkeypatch.setattr(publish, "_build_db", killed)
-    with pytest.raises(KeyboardInterrupt):
-        publish.publish(con, out, out.as_uri(), ONLY)
-    assert not (out / "manifest.json").exists()
+    publish.publish(con, out, out.as_uri(), ONLY)
+    with pytest.raises(ValueError, match="not empty"):
+        publish.publish(con, out, out.as_uri(), ["geography.alias"])
+    assert len(json.loads((out / "manifest.json").read_text())["tables"]) == len(ONLY)
 
 
 def test_views_keep_the_https_url_before_it_is_uploaded(con, tmp_path):

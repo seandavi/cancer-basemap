@@ -142,15 +142,17 @@ def publish(con, out: Path, base_url: str = DEFAULT_BASE_URL, only=None) -> dict
 
     Each table streams to `<schema>/<table>.parquet` (ZSTD) through COPY, so nothing is
     materialised in Python. manifest.json is written last, atomically: it marks the bundle
-    complete, so a stale one from an earlier run is removed first.
+    complete. `out` must be new or empty, so nothing from an earlier run sits beside a
+    manifest that does not list it.
     """
     selected = [t for t in TABLES if only is None or f"{t[0]}.{t[1]}" in only]
     unknown = set(only or ()) - {f"{s}.{t}" for s, t, _ in TABLES}
     if unknown:
         raise ValueError(f"not a published table: {sorted(unknown)}")
     base_url = base_url.rstrip("/")
+    if out.exists() and any(out.iterdir()):
+        raise ValueError(f"{out} is not empty: publish into a new directory")
     out.mkdir(parents=True, exist_ok=True)
-    (out / "manifest.json").unlink(missing_ok=True)
     # Row order is not part of the bundle, and keeping it makes COPY buffer much more.
     con.execute("SET preserve_insertion_order = false")
     tables = []
