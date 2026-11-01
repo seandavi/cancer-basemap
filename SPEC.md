@@ -121,6 +121,11 @@ Identical in shape to biocOnIce:
         DuckDB / DuckDB-WASM / PyIceberg / R / MCP / ECCO
 ```
 
+**Changing (ADR-0001).** The public surface becomes monthly Parquet + DuckDB
+view bundles on R2, kept a year, every release archived on Hugging Face; product
+tables become release SELECTs, and writers move to cdsci-lake. This section
+describes the writers and gateway that still exist until the retirement step.
+
 - Separate R2 bucket and catalog from biocOnIce; bucket-scoped read-only
   vending token (biocOnIce ADR-0011). Same Cloudflare account is acceptable
   **only because** nothing restricted ever lands (ADR-0005: the account is the
@@ -135,6 +140,9 @@ Identical in shape to biocOnIce:
 
 # Versioning model
 
+**Changing (ADR-0001):** the public product becomes one whole-product bundle
+a month, kept a year on R2 and permanently on Hugging Face; the per-dataset
+model below, and its "never pruned" promise, is replaced. Until then:
 cancerOnIce publishes **dataset releases** (biocOnIce ADR-0013, cdsci-lake
 ADR-0025): each dataset is an immutable full snapshot with a release id
 (`YYYY-MM-DD`, or `YYYY-MM-DD.N` for a second release the same day) and a
@@ -524,8 +532,10 @@ Shipped in the explorer and the MCP server, as in biocOnIce:
 
 Verified against a real deployment, as in biocOnIce.
 
-**A. Point in time.** Selecting SCP rows valid at the release that captured
-vintage V3 reproduces the V3 Zenodo deposit exactly.
+**A. Point in time.** In one release bundle, the raw SCP tables filtered on
+`scp_vintage = 'V3'` reproduce the landed topics of the V3 Zenodo deposit
+exactly, and `measure.observation` filtered on `source_release = 'V3'` is their
+documented derivation (ADR-0001).
 
 **B. Geography.** A 2019 Connecticut county-level measure crosswalks to 2022
 planning regions with stated weights; an old FIPS code resolves through
@@ -538,8 +548,9 @@ planning regions with stated weights; an old FIPS code resolves through
 of Colorado Cancer Center's catchment table with a provenance manifest naming
 every source release used.
 
-**E. Access.** Anonymous `ATTACH` from DuckDB and DuckDB-WASM; ECCO reads its
-data from the lake instead of its own Parquet.
+**E. Access.** A release bundle reads without credentials from DuckDB and
+DuckDB-WASM (`.read views.sql`, or `ATTACH` of `cancerbasemap.duckdb` over HTTPS);
+ECCO reads its data from the bundle instead of its own Parquet (ADR-0001).
 
 ---
 
@@ -570,5 +581,3 @@ cancer-site ↔ MONDO bridge exercised from biocOnIce; federation registry entry
   lake republishes a scrape; the provenance record should say so explicitly.
 - **Partnership.** Approach the CIF team and the CARDS group before M2, so the
   export recipe targets what adopters actually load.
-- **Cadence.** Monthly catalog releases (matching the scraper's CI), or
-  per-source-release?
