@@ -16,6 +16,21 @@ never recorded how its bucket and catalog were created; this is that runbook.
 Same Cloudflare account as biocOnIce is acceptable **only because** nothing
 restricted ever lands here (biocOnIce ADR-0005; SPEC.md § Licence gate).
 
+## Public releases (ADR-0001, #168)
+
+Created 2026-11-01. Nothing is published yet; the first release is #178.
+
+| Thing | Value | How it was made |
+| --- | --- | --- |
+| R2 bucket | `data-cancerbasemap` (ENAM hint) | monode `infrastructure/terraform/apps/cancerbasemap/` (monode#139); from the monode main checkout: `tofu plan -target=module.cancerbasemap` (1 to add), then `tofu apply` of that plan |
+| R2 write credentials | the account-scoped `cdsci-r2-*` keys in GSM, as biocOnIce's `upload` uses | pre-existing; no new token |
+| Hugging Face dataset repo | [`seandavis/cancerbasemap`](https://huggingface.co/datasets/seandavis/cancerbasemap), public, empty | `HfApi.create_repo('seandavis/cancerbasemap', repo_type='dataset')` with `HF_TOKEN` from GSM `cdsci-huggingface-token` |
+| Worker, site and `/data/` | `data-cancerbasemap` on `basemap.cancerdatasci.org` | not yet: #175 (creates the custom domain on deploy) |
+| Analytics Engine dataset | `data_cancerbasemap_usage` | created by the Worker's first write (#175) |
+| Access logs | the account `http_requests` Logpush already covers `cancerdatasci.org` into `cdsci-cf-logs` | pre-existing (monode `apps/cloudflare_logs`); the Worker record is #177 |
+
+The catalog above keeps its `canceronice` names until it is retired (#183).
+
 ## Secrets (Google Secret Manager, project `cdsci-infra`)
 
 Naming and labels follow `monode/infrastructure/terraform/README.md`.
