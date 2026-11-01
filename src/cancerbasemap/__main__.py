@@ -1,7 +1,8 @@
 import argparse
+import sys
 from pathlib import Path
 
-from . import catalog, census_gazetteer, merge, publish, schemas
+from . import catalog, census_gazetteer, gate, merge, publish, schemas
 
 
 def _print(counts):
@@ -31,6 +32,14 @@ def main():
                     help="where the bundle's views will read it from "
                          "(default: %(default)s; a dated folder passes its own /data/v{date})")
     pb.add_argument("--only", nargs="+", help="publish only these tables, e.g. measure.observation")
+
+    # core: release gate (ADR-0001, #172)
+    gt = sub.add_parser("gate", help="check a release bundle against the last published release; "
+                        "a pass writes gate.json into the bundle")
+    gt.add_argument("bundle", help="directory written by `publish`")
+    gt.add_argument("--reference", default=gate.DEFAULT_REFERENCE,
+                    help="base URL of the release to compare with (default: %(default)s), "
+                         "or 'none' for the bundle checks only")
 
     # --- raw: census gazetteer ---
     gz = sub.add_parser("gazetteer", help="land one Census Gazetteer vintage's county + "
@@ -291,6 +300,8 @@ def main():
     if args.cmd == "publish":
         publish.publish(publish.connect(), Path(args.out), args.base_url, args.only)
         return
+    if args.cmd == "gate":
+        sys.exit(not gate.gate(Path(args.bundle), None if args.reference == "none" else args.reference))
 
     cat = catalog()
     if args.cmd == "init":
