@@ -11,7 +11,7 @@ from pyiceberg.expressions import AlwaysTrue
 from pyiceberg.schema import Schema
 from pyiceberg.types import NestedField
 
-from canceronice import merge, schemas
+from cancerbasemap import merge, schemas
 
 REL1, REL2 = "2026.08", "2026.09"
 

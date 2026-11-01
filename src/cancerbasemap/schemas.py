@@ -31,19 +31,19 @@ from pyiceberg.types import DoubleType, IntegerType, NestedField, StringType
 ROW_GROUP_ROWS = 122_880
 
 VALID_FROM = (
-    "The cancerOnIce release from which this version of the record is valid. "
+    "The Cancer Basemap release from which this version of the record is valid. "
     "A row is one *version*: any change to any attribute closes the previous "
     "row and opens a new one, so the value here is not necessarily when the "
-    "record first existed. It is when cancerOnIce first carried this version, "
+    "record first existed. It is when Cancer Basemap first carried this version, "
     "not when the source published it."
 )
 VALID_TO = (
-    "The cancerOnIce release at which this version stopped being current, "
+    "The Cancer Basemap release at which this version stopped being current, "
     "exclusive. NULL means this is the current version — it does not mean "
     "unknown. Queries wanting current data must filter on valid_to IS NULL; "
     "queries wanting release R want "
     "valid_from <= R AND (valid_to IS NULL OR valid_to > R). This is a "
-    "cancerOnIce release, not the date the source changed the record."
+    "Cancer Basemap release, not the date the source changed the record."
 )
 
 
@@ -94,7 +94,7 @@ NAMESPACES = {
     "facility": "Places care happens (mammography, FQHC, providers, screening).",
     "catchment": "Cancer centers and the geographies they claim.",
     "resource": "Pointers to large or non-redistributable data (NaNDA, geometries).",
-    "provenance": "What each cancerOnIce release was built from, and how we know.",
+    "provenance": "What each Cancer Basemap release was built from, and how we know.",
 }
 
 VALUE_STATUSES = (
@@ -106,7 +106,7 @@ TABLES = {
     "provenance.release": TableDef(
         schema=Schema(
             NestedField(1, "release", StringType(), required=True,
-                        doc="cancerOnIce release, YYYY.MM with zero-padded corrections "
+                        doc="Cancer Basemap release, YYYY.MM with zero-padded corrections "
                             "YYYY.MM.NN. Zero-padded because '2026.10.10' sorts before "
                             "'2026.10.2' and release ordering would otherwise invert."),
             NestedField(2, "source", StringType(), required=True,
@@ -134,7 +134,7 @@ TABLES = {
         ),
         business_key=("release", "source", "source_version"),
         sort_by=("release", "source", "source_version"),
-        comment="One row per (cancerOnIce release, source, source_version): what this release "
+        comment="One row per (Cancer Basemap release, source, source_version): what this release "
                 "was built from. This is what makes a release reproducible — resolve it here to "
                 "each source's own version, then query each table at that release. Durable by "
                 "design: unlike Iceberg snapshot summaries it does not expire. Keyed on "
@@ -145,13 +145,13 @@ TABLES = {
 
     # --- provenance: lineage (#140) ---
     # Table- and column-level lineage DAG, captured at ingest with sqlglot
-    # (canceronice.lineage). One row per edge; a table-level-only edge (no
+    # (cancerbasemap.lineage). One row per edge; a table-level-only edge (no
     # single source column identified) leaves to_column NULL, and a raw
     # table's DAG root leaves from_column NULL with from_kind='url'.
     "provenance.lineage": TableDef(
         schema=Schema(
             NestedField(1, "release", StringType(), required=True,
-                        doc="cancerOnIce release whose ingest recorded this edge. "
+                        doc="Cancer Basemap release whose ingest recorded this edge. "
                             "FK provenance.release.release."),
             NestedField(2, "job", StringType(), required=True,
                         doc="The ingest module that produced this edge, by its module name "
@@ -185,12 +185,12 @@ TABLES = {
                             "verbatim from sqlglot (e.g. 'CASE WHEN EP_POV150 = -999 THEN NULL "
                             "ELSE EP_POV150 END'). NULL for a table-level-only or url-root edge."),
             NestedField(10, "code_version", StringType(), required=True,
-                        doc="git sha of canceronice (short form) at the time this edge was "
+                        doc="git sha of cancerbasemap (short form) at the time this edge was "
                             "recorded, or the installed package version when git is unavailable."),
         ),
         sort_by=("release", "job", "to_table", "to_column"),
         comment="Table- and column-level lineage DAG, one row per edge, captured at ingest with "
-                "sqlglot (canceronice.lineage, #140). Rebuildable from each ingest's own SQL, so "
+                "sqlglot (cancerbasemap.lineage, #140). Rebuildable from each ingest's own SQL, so "
                 "merge.write scopes it on (release, job, to_table) -- no Type 2 history, same as "
                 "provenance.release. The table-level DAG is `SELECT DISTINCT from_table, "
                 "to_table`; never stored twice, since a table-level-only row (to_column NULL) is "
@@ -308,7 +308,7 @@ TABLES = {
                         doc="Start of the time period this estimate describes, e.g. '2018' for "
                             "a five-year pooled 2018-2022 rate. The time the estimate is ABOUT, "
                             "distinct from source_release (when it was published) and "
-                            "valid_from (when cancerOnIce first served it)."),
+                            "valid_from (when Cancer Basemap first served it)."),
             NestedField(7, "period_end", StringType(), required=True,
                         doc="End of the time period this estimate describes, e.g. '2022'."),
             NestedField(8, "stratum_id", StringType(), required=True,
@@ -378,7 +378,7 @@ TABLES = {
                             "Version column: raw is replaced wholesale per value of this column, "
                             "so every landed vintage accumulates rather than overwrites the last."),
             NestedField(15, "landed_in", StringType(), required=True,
-                        doc="The cancerOnIce release whose ingest landed these rows."),
+                        doc="The Cancer Basemap release whose ingest landed these rows."),
         ),
         sort_by=("gazetteer_year", "geoid"),
         comment="Census Gazetteer county file landed verbatim and whole, every column, one row "
@@ -415,7 +415,7 @@ TABLES = {
                             "Version column: raw is replaced wholesale per value of this column, "
                             "so every landed vintage accumulates rather than overwrites the last."),
             NestedField(13, "landed_in", StringType(), required=True,
-                        doc="The cancerOnIce release whose ingest landed these rows."),
+                        doc="The Cancer Basemap release whose ingest landed these rows."),
         ),
         sort_by=("gazetteer_year", "geoid"),
         comment="Census Gazetteer tract file landed verbatim and whole, every column, one row "
@@ -433,7 +433,7 @@ TABLES = {
             NestedField(3, "state_name", StringType(), doc="Full state/territory name, e.g. 'Connecticut'."),
             NestedField(4, "statens", StringType(), doc="GNIS ANSI feature code for the state."),
             NestedField(5, "landed_in", StringType(), required=True,
-                        doc="The cancerOnIce release whose ingest landed these rows."),
+                        doc="The Cancer Basemap release whose ingest landed these rows."),
         ),
         sort_by=("state",),
         comment="Census's state/state-equivalent FIPS code reference "
@@ -470,7 +470,7 @@ TABLES = {
                             "geography.unit's boundary vintage, kept parallel to every other "
                             "level. Raw is replaced wholesale per value of this column."),
             NestedField(11, "landed_in", StringType(), required=True,
-                        doc="The cancerOnIce release whose ingest landed these rows."),
+                        doc="The Cancer Basemap release whose ingest landed these rows."),
         ),
         sort_by=("gazetteer_year", "geoid"),
         comment="Census Gazetteer congressional-district (CD) file landed verbatim and whole, one "
@@ -500,7 +500,7 @@ TABLES = {
                         doc="The gazetteer vintage year this row was published under. Raw is "
                             "replaced wholesale per value of this column."),
             NestedField(12, "landed_in", StringType(), required=True,
-                        doc="The cancerOnIce release whose ingest landed these rows."),
+                        doc="The Cancer Basemap release whose ingest landed these rows."),
         ),
         sort_by=("gazetteer_year", "geoid"),
         comment="Census Gazetteer state-legislative upper-chamber (SLDU) file landed verbatim and "
@@ -529,7 +529,7 @@ TABLES = {
                         doc="The gazetteer vintage year this row was published under. Raw is "
                             "replaced wholesale per value of this column."),
             NestedField(12, "landed_in", StringType(), required=True,
-                        doc="The cancerOnIce release whose ingest landed these rows."),
+                        doc="The Cancer Basemap release whose ingest landed these rows."),
         ),
         sort_by=("gazetteer_year", "geoid"),
         comment="Census Gazetteer state-legislative lower-chamber (SLDL) file landed verbatim and "
@@ -635,7 +635,7 @@ TABLES = {
                             "version axis for this source. Raw is replaced wholesale per "
                             "value of this column."),
             NestedField(7, "landed_in", StringType(), required=True,
-                        doc="The cancerOnIce release whose ingest landed these rows."),
+                        doc="The Cancer Basemap release whose ingest landed these rows."),
         ),
         sort_by=("rucc_edition", "FIPS", "Attribute"),
         comment="USDA ERS Rural-Urban Continuum Codes landed verbatim and whole, long format: "
@@ -669,7 +669,7 @@ TABLES = {
             NestedField(8, "note", StringType(),
                         doc="The exact Census sentence this row was transcribed from, quoted."),
             NestedField(9, "landed_in", StringType(), required=True,
-                        doc="The cancerOnIce release whose ingest landed these rows."),
+                        doc="The Cancer Basemap release whose ingest landed these rows."),
         ),
         sort_by=("old_fips", "new_fips"),
         comment="Curated CSV of Census 'Substantial Changes to Counties' name/code changes "
@@ -748,7 +748,7 @@ TABLES = {
                             "State Cancer Profiles' own FAQ names for incidence). Raw is "
                             "replaced wholesale per value of this column."),
             NestedField(7, "landed_in", StringType(), required=True,
-                        doc="The cancerOnIce release whose ingest landed these rows."),
+                        doc="The Cancer Basemap release whose ingest landed these rows."),
         ),
         sort_by=("site_recode_edition", "row_order"),
         comment="SEER Site Recode ICD-O-3/WHO 2008, landed verbatim and whole from the "
@@ -780,7 +780,7 @@ TABLES = {
                             "edition State Cancer Profiles' own FAQ names for mortality). Raw is "
                             "replaced wholesale per value of this column."),
             NestedField(8, "landed_in", StringType(), required=True,
-                        doc="The cancerOnIce release whose ingest landed these rows."),
+                        doc="The Cancer Basemap release whose ingest landed these rows."),
         ),
         sort_by=("cod_recode_edition", "row_order"),
         comment="SEER Cause of Death Recode 1969+, 'Neoplasm Causes of Death' table only "
@@ -819,7 +819,7 @@ TABLES = {
                             "genuinely differ, rather than guessed."),
             NestedField(7, "ncit_id", StringType(),
                         doc="NCI Thesaurus id (e.g. 'NCIT:C9335'), from the curated bridge "
-                            "(src/canceronice/data/cancer_site_ontology.csv) for the State "
+                            "(src/cancerbasemap/data/cancer_site_ontology.csv) for the State "
                             "Cancer Profiles sites it covers. NULL elsewhere -- never guessed "
                             "(module docstring lists the sites left unmapped and why)."),
             NestedField(8, "mondo_id", StringType(),
@@ -899,7 +899,7 @@ TABLES = {
                             "its core causal list), or where another authority's evidence "
                             "grading differs. NULL where there is nothing to add."),
             NestedField(8, "landed_in", StringType(), required=True,
-                        doc="The cancerOnIce release whose ingest landed these rows."),
+                        doc="The Cancer Basemap release whose ingest landed these rows."),
         ),
         sort_by=("group_id", "cancer_site_code"),
         comment="Curated CSV of cancer-site groupings (data/cancer_site_groups.csv, committed "
@@ -1133,7 +1133,7 @@ TABLES = {
                             "version axis for this source (module docstring). Raw is "
                             "replaced wholesale per value of this column."),
             NestedField(173, "landed_in", StringType(), required=True,
-                        doc="The cancerOnIce release whose ingest landed these rows."),
+                        doc="The Cancer Basemap release whose ingest landed these rows."),
         ),
         sort_by=("svi_edition", "FIPS"),
         comment="CDC/ATSDR Social Vulnerability Index county file landed verbatim and "
@@ -1311,7 +1311,7 @@ TABLES = {
                             "version axis for this source (module docstring). Raw is "
                             "replaced wholesale per value of this column."),
             NestedField(160, "landed_in", StringType(), required=True,
-                        doc="The cancerOnIce release whose ingest landed these rows."),
+                        doc="The Cancer Basemap release whose ingest landed these rows."),
         ),
         sort_by=("svi_edition", "FIPS"),
         comment="CDC/ATSDR Social Vulnerability Index tract file landed verbatim and "
@@ -1406,7 +1406,7 @@ TABLES = {
             NestedField(76, "NOVEH", StringType(), doc="Number of households with no vehicle available."),
             NestedField(77, "GROUPQ", StringType(), doc="Number of persons in institutional and non-institutional group quarters."),
             NestedField(78, "svi_edition", StringType(), required=True, doc="The SVI edition this row was published in ('2000' or '2010' for this table) -- the version axis for this source (module docstring). Raw is replaced wholesale per value of this column."),
-            NestedField(79, "landed_in", StringType(), required=True, doc="The cancerOnIce release whose ingest landed these rows."),
+            NestedField(79, "landed_in", StringType(), required=True, doc="The Cancer Basemap release whose ingest landed these rows."),
         ),
         sort_by=("svi_edition", "STCNTY"),
         comment="CDC/ATSDR Social Vulnerability Index 2000 edition, county file, landed verbatim and whole under its own real column layout -- NOT unioned into raw.svi__county (module docstring: no ACS E_/M_ columns at all, decennial-Census-based; the real file's line 1 is a stale header CDC never removed, so this table's schema matches the file's real line-2 header, and land_raw skips line 1 on read). Public domain (17 U.S.C. Sec 105; https://www.cdc.gov/other/agencymaterials.html).",
@@ -1494,7 +1494,7 @@ TABLES = {
             NestedField(78, "NOVEH", StringType(), doc="Number of households with no vehicle available."),
             NestedField(79, "GROUPQ", StringType(), doc="Number of persons in institutional and non-institutional group quarters."),
             NestedField(80, "svi_edition", StringType(), required=True, doc="The SVI edition this row was published in ('2000' or '2010' for this table) -- the version axis for this source (module docstring). Raw is replaced wholesale per value of this column."),
-            NestedField(81, "landed_in", StringType(), required=True, doc="The cancerOnIce release whose ingest landed these rows."),
+            NestedField(81, "landed_in", StringType(), required=True, doc="The Cancer Basemap release whose ingest landed these rows."),
         ),
         sort_by=("svi_edition", "FIPS"),
         comment="CDC/ATSDR Social Vulnerability Index 2000 edition, tract file, landed verbatim and whole under its own real column layout -- see raw.svi__county_2000 for why this is a dedicated table rather than a union. Public domain (17 U.S.C. Sec 105; https://www.cdc.gov/other/agencymaterials.html).",
@@ -1606,7 +1606,7 @@ TABLES = {
             NestedField(102, "Shape.STArea()", StringType(), doc="ArcGIS geometry byproduct (county file only), landed verbatim."),
             NestedField(103, "Shape.STLength()", StringType(), doc="ArcGIS geometry byproduct (county file only), landed verbatim."),
             NestedField(104, "svi_edition", StringType(), required=True, doc="The SVI edition this row was published in ('2000' or '2010' for this table) -- the version axis for this source (module docstring). Raw is replaced wholesale per value of this column."),
-            NestedField(105, "landed_in", StringType(), required=True, doc="The cancerOnIce release whose ingest landed these rows."),
+            NestedField(105, "landed_in", StringType(), required=True, doc="The Cancer Basemap release whose ingest landed these rows."),
         ),
         sort_by=("svi_edition", "FIPS"),
         comment="CDC/ATSDR Social Vulnerability Index 2010 edition, county file, landed verbatim and whole under its own real column layout -- NOT unioned into raw.svi__county (module docstring: this edition's own STATE column holds the 2-digit state FIPS code, while every 2014+ layout's STATE column holds the state name -- a same-name, different-meaning collision unsafe to union). Public domain (17 U.S.C. Sec 105; https://www.cdc.gov/other/agencymaterials.html).",
@@ -1725,7 +1725,7 @@ TABLES = {
             NestedField(109, "Shape.STArea()", StringType(), doc="ArcGIS geometry byproduct (county file only), landed verbatim."),
             NestedField(110, "Shape.STLength()", StringType(), doc="ArcGIS geometry byproduct (county file only), landed verbatim."),
             NestedField(111, "svi_edition", StringType(), required=True, doc="The SVI edition this row was published in ('2000' or '2010' for this table) -- the version axis for this source (module docstring). Raw is replaced wholesale per value of this column."),
-            NestedField(112, "landed_in", StringType(), required=True, doc="The cancerOnIce release whose ingest landed these rows."),
+            NestedField(112, "landed_in", StringType(), required=True, doc="The Cancer Basemap release whose ingest landed these rows."),
         ),
         sort_by=("svi_edition", "FIPS"),
         comment="CDC/ATSDR Social Vulnerability Index 2010 edition, tract file, landed verbatim and whole under its own real column layout -- see raw.svi__county_2010 for why this is a dedicated table rather than a union. Public domain (17 U.S.C. Sec 105; https://www.cdc.gov/other/agencymaterials.html).",
@@ -1742,7 +1742,7 @@ TABLES = {
                             "the version axis for this source. Raw is replaced wholesale per "
                             "value of this column."),
             NestedField(2, "landed_in", StringType(), required=True,
-                        doc="The cancerOnIce release whose ingest landed these rows."),
+                        doc="The Cancer Basemap release whose ingest landed these rows."),
             # --- 2010 edition only (NULL on 2020 rows); from the revised (3 Jul
             # 2019) workbook's 'Data' sheet, 9 columns, header on row 2.
             NestedField(3, "fips_2010", StringType(),
@@ -2389,7 +2389,7 @@ TABLES = {
                             "Versioning model). Raw is replaced wholesale per value of this "
                             "column."),
             NestedField(149, "landed_in", StringType(), required=True,
-                        doc="The cancerOnIce release whose ingest landed these rows."),
+                        doc="The Cancer Basemap release whose ingest landed these rows."),
         ),
         sort_by=("atlas_edition", "CensusTract"),
         comment="USDA ERS Food Access Research Atlas landed verbatim and whole, every "
@@ -3288,7 +3288,7 @@ TABLES = {
                             "(SPEC.md Versioning model). Raw is replaced wholesale per value "
                             "of this column."),
             NestedField(160, "landed_in", StringType(), required=True,
-                        doc="The cancerOnIce release whose ingest landed these rows."),
+                        doc="The Cancer Basemap release whose ingest landed these rows."),
         ),
         sort_by=("atlas_edition", "CensusTract20"),
         comment="USDA ERS Food Access Research Atlas, SNAP-authorized Retailer Access Map "
@@ -3329,7 +3329,7 @@ TABLES = {
                             "CSV cell itself was blank -- AHRF's own missing-data marker for "
                             "these fields; a real reported 0 is never read as missing."),
             NestedField(6, "landed_in", StringType(), required=True,
-                        doc="The cancerOnIce release whose ingest landed this row."),
+                        doc="The Cancer Basemap release whose ingest landed this row."),
         ),
         sort_by=("ahrf_release", "fips", "column_name"),
         comment="HRSA Area Health Resources Files (AHRF), county level, landed LONG: one row "
@@ -3432,7 +3432,7 @@ TABLES = {
                             "axis for this source (it publishes no edition label). Raw is replaced "
                             "wholesale per value of this column."),
             NestedField(57, "landed_in", StringType(), required=True,
-                        doc="The cancerOnIce release whose ingest landed these rows."),
+                        doc="The Cancer Basemap release whose ingest landed these rows."),
         ),
         sort_by=("retrieved_on", "BPHC Assigned Number"),
         comment="HRSA Health Center Service Delivery and Look-Alike Sites, landed verbatim and whole "
@@ -3533,7 +3533,7 @@ TABLES = {
                         doc="Date this daily-refreshed dump was fetched, ISO YYYY-MM-DD -- the version "
                             "axis for this source. Raw is replaced wholesale per value of this column."),
             NestedField(67, "landed_in", StringType(), required=True,
-                        doc="The cancerOnIce release whose ingest landed these rows."),
+                        doc="The Cancer Basemap release whose ingest landed these rows."),
         ),
         sort_by=("retrieved_on", "HPSA ID"),
         comment="HRSA primary-care Health Professional Shortage Area designations "
@@ -3564,7 +3564,7 @@ TABLES = {
                             "for a continuously-refreshed snapshot source like HRSA_HC: the snapshot date "
                             "is recorded in provenance.release and raw's own version column instead, "
                             "since repeating it here would make every unchanged row look changed on every "
-                            "ingest; when cancerOnIce saw a given version of the row is "
+                            "ingest; when Cancer Basemap saw a given version of the row is "
                             "valid_from/valid_to, not source_release."),
             NestedField(4, "kind", StringType(), required=True,
                         doc="'fqhc' | 'rhc' | 'mammography' | 'lung_screening' | 'provider' | "
@@ -3725,7 +3725,7 @@ TABLES = {
                             "(scp.py's module docstring). Raw is replaced wholesale per "
                             "value of this column."),
             NestedField(32, "landed_in", StringType(), required=True,
-                        doc="cancerOnIce release that landed this row."),
+                        doc="Cancer Basemap release that landed this row."),
         ),
         sort_by=("scp_vintage", "fips", "cancer", "sex"),
         comment="State Cancer Profiles incidence, landed verbatim and whole, one row per "
@@ -3854,7 +3854,7 @@ TABLES = {
                             "(scp.py's module docstring). Raw is replaced wholesale per "
                             "value of this column."),
             NestedField(31, "landed_in", StringType(), required=True,
-                        doc="cancerOnIce release that landed this row."),
+                        doc="Cancer Basemap release that landed this row."),
         ),
         sort_by=("scp_vintage", "fips", "cancer", "sex"),
         comment="State Cancer Profiles mortality, landed verbatim and whole, one row per "
@@ -3938,7 +3938,7 @@ TABLES = {
                             "not published in V1/V2 (scp.py's module docstring). Raw is "
                             "replaced wholesale per value of this column."),
             NestedField(22, "landed_in", StringType(), required=True,
-                        doc="cancerOnIce release that landed this row."),
+                        doc="Cancer Basemap release that landed this row."),
         ),
         sort_by=("scp_vintage", "fips", "topic", "sex"),
         comment="State Cancer Profiles screening & risk factors (BRFSS-derived), landed "
@@ -3970,7 +3970,7 @@ TABLES = {
                             doc="The 5-year release's end year (e.g. 2023 for the 2019-2023 "
                                 "release) -- the version column raw is scoped and overwritten by."),
                 NestedField(3, "landed_in", StringType(), required=True,
-                            doc="The cancerOnIce release whose ingest landed these rows."),
+                            doc="The Cancer Basemap release whose ingest landed these rows."),
                 NestedField(4, "B01003_E001", StringType(), doc="ACS estimate (count): Total (Total Population)."),
                 NestedField(5, "B01003_M001", StringType(), doc="Margin of error (90% confidence) for the paired B01003_E001 estimate."),
                 NestedField(6, "B09001_E001", StringType(), doc="ACS estimate (count): Total (Population Under 18 Years by Age)."),
@@ -4521,7 +4521,7 @@ TABLES = {
                             "axis for this source (it publishes no edition label). Raw is replaced "
                             "wholesale per value of this column."),
             NestedField(11, "landed_in", StringType(), required=True,
-                        doc="The cancerOnIce release whose ingest landed these rows."),
+                        doc="The Cancer Basemap release whose ingest landed these rows."),
         ),
         sort_by=("retrieved_on", "State", "Facility Name", "Address 1"),
         comment="FDA MQSA certified mammography facility list, landed verbatim and whole, replaced "
@@ -4622,7 +4622,7 @@ TABLES = {
             NestedField(42, "SEASONAL_STARTUP_SYSTEM", StringType(),
                         doc="Seasonal pressurization/startup status."),
             NestedField(43, "landed_in", StringType(), required=True,
-                        doc="The cancerOnIce release whose ingest landed these rows."),
+                        doc="The Cancer Basemap release whose ingest landed these rows."),
         ),
         sort_by=("SUBMISSIONYEARQUARTER", "PWSID"),
         comment="EPA SDWIS Federal public water systems, landed verbatim and whole (minus nine "
@@ -4640,7 +4640,7 @@ TABLES = {
             NestedField(2, "PWSID", StringType(), required=True, doc="Public water system id."),
             NestedField(3, "GEO_ID", StringType(),
                         doc="EPA's own system-generated id for this (PWSID, area) record -- "
-                            "unrelated to cancerOnIce's own geo_id convention used elsewhere in "
+                            "unrelated to Cancer Basemap's own geo_id convention used elsewhere in "
                             "this catalog."),
             NestedField(4, "AREA_TYPE_CODE", StringType(),
                         doc="TR tribal, CN county, ZC zip code, CT city, IR Indian reservation, "
@@ -4665,7 +4665,7 @@ TABLES = {
                             "is populated. Not used for the FIPS derivation, kept for reference."),
             NestedField(11, "LAST_REPORTED_DATE", StringType(), doc="Last reported date."),
             NestedField(12, "landed_in", StringType(), required=True,
-                        doc="The cancerOnIce release whose ingest landed these rows."),
+                        doc="The Cancer Basemap release whose ingest landed these rows."),
         ),
         sort_by=("SUBMISSIONYEARQUARTER", "PWSID", "GEO_ID"),
         comment="EPA SDWIS Federal: every county/city/zip/tribal area each public water system "
@@ -4735,7 +4735,7 @@ TABLES = {
             NestedField(37, "ENF_FIRST_REPORTED_DATE", StringType(), doc="Date the enforcement action was first reported."),
             NestedField(38, "ENF_LAST_REPORTED_DATE", StringType(), doc="Date the enforcement action was last reported."),
             NestedField(39, "landed_in", StringType(), required=True,
-                        doc="The cancerOnIce release whose ingest landed these rows."),
+                        doc="The Cancer Basemap release whose ingest landed these rows."),
         ),
         sort_by=("SUBMISSIONYEARQUARTER", "PWSID", "VIOLATION_ID"),
         comment="EPA SDWIS Federal violation+enforcement records, landed verbatim and whole, "
@@ -4758,7 +4758,7 @@ TABLES = {
                             "raw.sdwis__geographic_areas' PWSID prefix in epa_sdwis.py, since "
                             "that table's own STATE_SERVED column is empty on county rows."),
             NestedField(5, "landed_in", StringType(), required=True,
-                        doc="The cancerOnIce release whose ingest landed these rows."),
+                        doc="The Cancer Basemap release whose ingest landed these rows."),
         ),
         sort_by=("ANSI_STATE_CODE", "ANSI_ENTITY_CODE"),
         comment="EPA's own ANSI/FIPS county reference table, bundled in the same SDWA bulk "
@@ -4805,7 +4805,7 @@ TABLES = {
                             "per value of this column; several retrievals with identical bytes "
                             "are one vintage (bls_laus.py skips landing a repeat)."),
             NestedField(7, "landed_in", StringType(), required=True,
-                        doc="The cancerOnIce release whose ingest landed these rows."),
+                        doc="The Cancer Basemap release whose ingest landed these rows."),
         ),
         sort_by=("laus_vintage", "series_id", "year", "period"),
         comment="BLS LAUS county-level (area_type_code='F') monthly + annual-average data, "
@@ -4829,7 +4829,7 @@ TABLES = {
             NestedField(6, "sort_sequence", StringType(), doc="BLS display sort order, as published."),
             NestedField(7, "laus_vintage", StringType(), required=True, doc="See raw.bls__laus_county."),
             NestedField(8, "landed_in", StringType(), required=True,
-                        doc="The cancerOnIce release whose ingest landed these rows."),
+                        doc="The Cancer Basemap release whose ingest landed these rows."),
         ),
         sort_by=("laus_vintage", "area_type_code", "area_code"),
         comment="BLS LAUS area code lookup (la.area), landed verbatim and whole per vintage.",
@@ -4854,7 +4854,7 @@ TABLES = {
             NestedField(12, "end_period", StringType(), doc="Last period this series has data, as of this vintage."),
             NestedField(13, "laus_vintage", StringType(), required=True, doc="See raw.bls__laus_county."),
             NestedField(14, "landed_in", StringType(), required=True,
-                        doc="The cancerOnIce release whose ingest landed these rows."),
+                        doc="The Cancer Basemap release whose ingest landed these rows."),
         ),
         sort_by=("laus_vintage", "series_id"),
         comment="BLS LAUS series identification lookup (la.series), landed verbatim and whole "
@@ -4870,7 +4870,7 @@ TABLES = {
             NestedField(2, "measure_text", StringType(), required=True, doc="Human-readable measure name."),
             NestedField(3, "laus_vintage", StringType(), required=True, doc="See raw.bls__laus_county."),
             NestedField(4, "landed_in", StringType(), required=True,
-                        doc="The cancerOnIce release whose ingest landed these rows."),
+                        doc="The Cancer Basemap release whose ingest landed these rows."),
         ),
         sort_by=("laus_vintage", "measure_code"),
         comment="BLS LAUS measure code lookup (la.measure), landed verbatim and whole per vintage.",
@@ -4883,7 +4883,7 @@ TABLES = {
             NestedField(2, "footnote_text", StringType(), required=True, doc="Footnote text, as published."),
             NestedField(3, "laus_vintage", StringType(), required=True, doc="See raw.bls__laus_county."),
             NestedField(4, "landed_in", StringType(), required=True,
-                        doc="The cancerOnIce release whose ingest landed these rows."),
+                        doc="The Cancer Basemap release whose ingest landed these rows."),
         ),
         sort_by=("laus_vintage", "footnote_code"),
         comment="BLS LAUS footnote code lookup (la.footnote), landed verbatim and whole per "
@@ -4943,7 +4943,7 @@ TABLES = {
                         doc="The EJScreen edition (2015-2024) -- the version axis for this "
                             "source. Raw is replaced wholesale per value of this column."),
             NestedField(18, "landed_in", StringType(), required=True,
-                        doc="The cancerOnIce release whose ingest landed these rows."),
+                        doc="The Cancer Basemap release whose ingest landed these rows."),
             NestedField(19, "extra_json", StringType(),
                         doc="Every other column this edition's file publishes (demographic "
                             "bases, percentile/statistical-comparison breakdown columns, "
@@ -4985,7 +4985,7 @@ TABLES = {
                         doc="See raw.ejscreen__blockgroup. Only landed for editions "
                             "2021-2024 -- EPA published no separate tract file before."),
             NestedField(18, "landed_in", StringType(), required=True,
-                        doc="The cancerOnIce release whose ingest landed these rows."),
+                        doc="The Cancer Basemap release whose ingest landed these rows."),
             NestedField(19, "extra_json", StringType(), doc="See raw.ejscreen__blockgroup."),
         ),
         sort_by=("ejscreen_edition", "geo_id"),
@@ -5037,7 +5037,7 @@ TABLES = {
                             "'2026-09-19' (SPEC.md's vintage rule). Raw is replaced "
                             "wholesale per value of this column."),
             NestedField(12, "landed_in", StringType(), required=True,
-                        doc="The cancerOnIce release whose ingest landed these rows."),
+                        doc="The Cancer Basemap release whose ingest landed these rows."),
         ),
         sort_by=("teenvax_vintage", "vaccine", "geography", "dose", "year_season"),
         comment="CDC TeenVaxView / NIS-Teen vaccination coverage among adolescents "
@@ -5100,7 +5100,7 @@ TABLES = {
             NestedField(46, "assessment_year", StringType(), required=True,
                         doc="The AirToxScreen assessment year ('2018' or '2019' -- the only years this module lands; see module docstring), the raw overwrite-scope column and source_release downstream."),
             NestedField(47, "landed_in", StringType(), required=True,
-                        doc="The cancerOnIce release whose ingest landed these rows."),
+                        doc="The Cancer Basemap release whose ingest landed these rows."),
         ),
         sort_by=("assessment_year", "fips", "tract"),
         comment="EPA AirToxScreen 2018/2019 assessment, by-source-group cancer risk file "
@@ -5195,7 +5195,7 @@ TABLES = {
             NestedField(80, "assessment_year", StringType(), required=True,
                         doc="The AirToxScreen assessment year ('2018' or '2019' -- the only years this module lands; see module docstring), the raw overwrite-scope column and source_release downstream."),
             NestedField(81, "landed_in", StringType(), required=True,
-                        doc="The cancerOnIce release whose ingest landed these rows."),
+                        doc="The Cancer Basemap release whose ingest landed these rows."),
         ),
         sort_by=("assessment_year", "fips", "tract"),
         comment="EPA AirToxScreen 2018/2019 assessment, by-pollutant cancer risk file "
@@ -5378,7 +5378,7 @@ TABLES = {
                             "since EPA revises a reporting year's data in place with no edition "
                             "label of its own (module docstring)."),
             NestedField(124, "landed_in", StringType(), required=True,
-                        doc="The cancerOnIce release whose ingest landed these rows."),
+                        doc="The Cancer Basemap release whose ingest landed these rows."),
         ),
         sort_by=("YEAR", "TRIFD", "CHEMICAL"),
         comment="EPA TRI Basic Data Files, landed verbatim and whole, one national file per "
@@ -5417,7 +5417,7 @@ TABLES = {
                             "the version measure.observation is derived from (radon.py module "
                             "docstring on why 'filtered' was chosen)."),
             NestedField(6, "landed_in", StringType(), required=True,
-                        doc="The cancerOnIce release whose ingest landed these rows."),
+                        doc="The Cancer Basemap release whose ingest landed these rows."),
         ),
         sort_by=("state", "county_state"),
         comment="EPA Map of Radon Zones, county-level predicted indoor radon screening zone "
@@ -5503,7 +5503,7 @@ TABLES = {
                             "label (module docstring); raw is replaced wholesale per value of "
                             "this column."),
             NestedField(29, "landed_in", StringType(), required=True,
-                        doc="The cancerOnIce release whose ingest landed these rows."),
+                        doc="The Cancer Basemap release whose ingest landed these rows."),
         ),
         sort_by=("retrieved_on", "Site_EPA_ID"),
         comment="EPA Superfund National Priorities List sites with status (proposed / final / "
@@ -5578,7 +5578,7 @@ TABLES = {
             NestedField(32, "retrieved_on", StringType(), required=True,
                         doc="ISO date this snapshot was retrieved; see raw.superfund__npl_status."),
             NestedField(33, "landed_in", StringType(), required=True,
-                        doc="The cancerOnIce release whose ingest landed these rows."),
+                        doc="The Cancer Basemap release whose ingest landed these rows."),
         ),
         sort_by=("retrieved_on", "PGM_SYS_ID"),
         comment="EPA Facility Registry Service's own NPL subset (FRS_INTERESTS_SEMS_NPL), "
@@ -5623,7 +5623,7 @@ def create(cat, identifier):
     # id(cat): ids are recycled once a catalog is garbage-collected, so a fresh
     # catalog (every test, or a second one in a process) inherited a dead
     # catalog's "already ensured" and then hit NoSuchNamespaceError.
-    ensured = cat.__dict__.setdefault("_canceronice_namespaces", set())
+    ensured = cat.__dict__.setdefault("_cancerbasemap_namespaces", set())
     if ns not in ensured:
         rate_limited(lambda: cat.create_namespace_if_not_exists(
             ns, properties={"comment": NAMESPACES[ns]}))

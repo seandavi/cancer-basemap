@@ -21,7 +21,7 @@ import pyarrow as pa
 import pytest
 from pyiceberg.expressions import EqualTo
 
-from canceronice import bls_laus, merge
+from cancerbasemap import bls_laus, merge
 
 REL = "2026.09"
 FIX = Path(__file__).parent

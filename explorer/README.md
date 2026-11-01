@@ -1,6 +1,6 @@
-# Catchment Lake Explorer
+# Cancer Basemap Explorer
 
-A static page that reads the live cancerOnIce catalog through icegate,
+A static page that reads the live Cancer Basemap catalog through icegate,
 anonymously, and shows what's in it: namespaces, tables, column docs,
 business keys, partition specs, snapshot history, a copyable DuckDB snippet
 per table, worked recipe queries, and an in-browser DuckDB-WASM query tab
@@ -91,7 +91,7 @@ outside the Query tab), but a visitor can now actually run it themselves.
 
 Every column doc, table comment, partition spec and snapshot on the page is
 read live from the REST catalog at view time (`app.js`'s `api()`), never
-copied from `src/canceronice/*`. The five recipe queries in
+copied from `src/cancerbasemap/*`. The five recipe queries in
 `public/recipes.js` were run against the live catalog with the `duckdb`
 Python API (`uv run python`) on 2026-09-18, and separately confirmed to run
 in the browser via the Query tab; the numbers in the "Verified" line under
@@ -105,15 +105,15 @@ verification above was done by hand this session, live, not automated.
 
 ## Deviations from bioc-on-ice's explorer (#50)
 
-- Branding: title "Catchment Lake", subtitle "built on the cancerOnIce
+- Branding: title "Cancer Basemap", subtitle "the Cancer Basemap
   catalog" (SPEC.md § Names).
 - `CATALOG_ENDPOINT` → `https://icegate-canceronice.seandavi.workers.dev`,
   `WAREHOUSE` → `canceronice`, ATTACH alias `bioc` → `coi`, Worker name
   `canceronice-explorer`, `localStorage` key `bioconice_query_tab` →
-  `canceronice_query_tab`.
+  `cancerbasemap_query_tab`.
 - Property-key prefixes read from table metadata (`bioc.license`,
   `bioc.column.*.prefix`/`.coordinate_system`) renamed to `coi.*` for
-  consistency; cancerOnIce's catalog doesn't currently set any of these
+  consistency; Cancer Basemap's catalog doesn't currently set any of these
   properties, so this code path renders nothing either way — kept for
   parity in case a future table sets them.
 - Query tab flipped from opt-in/off-by-default to opt-out/on-by-default,

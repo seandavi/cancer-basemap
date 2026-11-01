@@ -48,7 +48,7 @@ con.sql("""
 `u.vintage = 2026` is named explicitly rather than trusting `o.geo_vintage`
 — see [Concepts › Time axes](/concepts/time-axes.qmd) for why a measure's own
 `geo_vintage` column isn't always the vintage its `geo_id` actually belongs
-to (tracked as [#21](https://github.com/seandavi/cancer-on-ice/issues/21)).
+to (tracked as [#21](https://github.com/seandavi/cancer-basemap/issues/21)).
 
 `con.sql(...)` returns a DuckDB relation; `.df()` materializes it as a
 pandas `DataFrame`, `.arrow()` as an Arrow table, or iterate it directly —

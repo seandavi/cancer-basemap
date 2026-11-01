@@ -1,4 +1,4 @@
-// Fixed recipe list for Catchment Lake — worked queries against tables that
+// Fixed recipe list for Cancer Basemap — worked queries against tables that
 // are live today (anonymous read): geography.unit, measure.observation,
 // measure.definition, measure.stratum, provenance.release. Every SQL string
 // here is self-contained (INSTALL/LOAD/ATTACH included) so pasting one
@@ -99,7 +99,7 @@ ORDER BY vintage, geo_id;`,
     title: "Provenance — what each catalog release was built from",
     description:
       "One row per (release, source): the upstream version, how it was resolved, and when it was retrieved — " +
-      "what makes a cancerOnIce release reproducible.",
+      "what makes a Cancer Basemap release reproducible.",
     sql: `${ATTACH}
 
 SELECT release, source, source_version, version_method, retrieved_at, row_count

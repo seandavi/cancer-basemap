@@ -25,7 +25,7 @@ import pyarrow as pa
 import pytest
 from pyiceberg.expressions import EqualTo
 
-from canceronice import epa_superfund, merge
+from cancerbasemap import epa_superfund, merge
 
 REL = "2026.09"
 STATUS_JSON = str(Path(__file__).parent / "tiny_epa_superfund_status.json")

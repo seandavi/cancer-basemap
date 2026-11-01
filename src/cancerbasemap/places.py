@@ -240,7 +240,7 @@ def _url(dataset_id):
 def _header(url):
     """The file's first line, split on comma. Only that line is fetched."""
     if url.startswith("http"):
-        req = urllib.request.Request(url, headers={"User-Agent": "cancerOnIce/0.1"})
+        req = urllib.request.Request(url, headers={"User-Agent": "cancerbasemap/0.1"})
         with urllib.request.urlopen(req) as r:
             first = r.readline()
     else:
@@ -263,7 +263,7 @@ def _download(url, dest):
     (module docstring: ~2.9-3.2M rows) -- unlike `_header`'s one-line peek, downloading
     the whole thing must not hold it as one bytes object in memory at the same time
     DuckDB is about to materialize it again as an Arrow table."""
-    req = urllib.request.Request(url, headers={"User-Agent": "cancerOnIce/0.1"})
+    req = urllib.request.Request(url, headers={"User-Agent": "cancerbasemap/0.1"})
     with urllib.request.urlopen(req) as r, open(dest, "wb") as f:
         shutil.copyfileobj(r, f, length=1024 * 1024)
 

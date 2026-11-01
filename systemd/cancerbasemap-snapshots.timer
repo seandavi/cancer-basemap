@@ -1,5 +1,5 @@
 [Unit]
-Description=Weekly cancerOnIce snapshot landers (MQSA is refreshed weekly upstream)
+Description=Weekly Cancer Basemap snapshot landers (MQSA is refreshed weekly upstream)
 
 [Timer]
 OnCalendar=Mon *-*-* 06:30:00

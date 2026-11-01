@@ -69,7 +69,7 @@ from . import lineage, merge
 URL = "https://www.ers.usda.gov/media/5768/2023-rural-urban-continuum-codes.csv"
 EDITION = "2023"
 GEO_VINTAGE = 2020
-USER_AGENT = "cancerOnIce/1.0 (+https://github.com/seandavi/cancer-on-ice)"
+USER_AGENT = "cancerbasemap/1.0 (+https://github.com/seandavi/cancer-basemap)"
 
 # The file's header, in file order. Long format: one row per (county, attribute).
 COLUMNS = ("FIPS", "State", "County_Name", "Attribute", "Value")

@@ -113,7 +113,7 @@ from pyiceberg.expressions import And, EqualTo
 
 from . import merge
 
-USER_AGENT = "cancerOnIce/1.0 (+https://github.com/seandavi/cancer-on-ice)"
+USER_AGENT = "cancerbasemap/1.0 (+https://github.com/seandavi/cancer-basemap)"
 URL_HC_SITES = ("https://data.hrsa.gov/DataDownload/DD_Files/"
                "Health_Center_Service_Delivery_and_LookAlike_Sites.csv")
 URL_HPSA_PC = "https://data.hrsa.gov/DataDownload/DD_Files/BCD_HPSA_FCT_DET_PC.csv"

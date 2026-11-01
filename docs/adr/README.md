@@ -7,7 +7,7 @@ that turned out wrong is the useful part.
 
 ## Inherited decisions
 
-cancerOnIce adopts [biocOnIce's ADRs](https://github.com/seandavi/bioc-on-ice/tree/main/docs/adr)
+Cancer Basemap adopts [biocOnIce's ADRs](https://github.com/seandavi/bioc-on-ice/tree/main/docs/adr)
 by reference (SPEC.md § Architecture): land raw then derive (0002), declared
 schemas (0003), merge recomputes the scope (0004), the Cloudflare account is
 the trust domain (0005), release manifest (0007), bucket-scoped vending tokens

@@ -1,7 +1,7 @@
 """geography.alias: land the curated county-recode CSV whole -> derive
 geography.alias, one row per real (non-boundary) FIPS recode.
 
-The CSV under test is the real packaged file (src/canceronice/data/
+The CSV under test is the real packaged file (src/cancerbasemap/data/
 county_recodes.csv), not a separate fixture -- it IS the source of truth
 here, the same way the curated file is the review artifact per #26. A
 malformed variant is written to tmp_path only for the header-mismatch case.
@@ -13,8 +13,8 @@ import pyarrow as pa
 import pytest
 from pyiceberg.expressions import EqualTo
 
-from canceronice import geography_alias as ga
-from canceronice import merge
+from cancerbasemap import geography_alias as ga
+from cancerbasemap import merge
 
 REL = "2026.09"
 

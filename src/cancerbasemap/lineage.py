@@ -85,7 +85,7 @@ def _code_version():
                              capture_output=True, text=True, timeout=5, check=True)
         return got.stdout.strip()
     except Exception:
-        return _pkg_version("canceronice")
+        return _pkg_version("cancerbasemap")
 
 
 def _ctas_sources(statements):

@@ -6,7 +6,7 @@ jupyter: coi-docs
 This page is generated at *build* time — the measures table and the
 provenance table are queried live from the catalog, and every table's
 column docs come straight from the declared schemas
-(`canceronice.schemas`) in this repository, not hand-copied. If a release
+(`cancerbasemap.schemas`) in this repository, not hand-copied. If a release
 adds a measure or a schema gains a column, this page's next render shows it.
 
 ## Measures
@@ -54,7 +54,7 @@ Inputs.table(measureSearch, {
 
 ## Tables
 
-Every table this repository declares (`canceronice.schemas.TABLES`),
+Every table this repository declares (`cancerbasemap.schemas.TABLES`),
 grouped by namespace, with its comment, its business key, and every
 column's own doc string. A table not yet populated in the live catalog
 still appears here — this section is the *declared* schema, not a scan of
@@ -63,7 +63,7 @@ what happens to exist right now.
 ```{python}
 #| echo: false
 #| output: asis
-from canceronice import schemas
+from cancerbasemap import schemas
 
 for ns, ns_doc in schemas.NAMESPACES.items():
     tables_in_ns = sorted(k for k in schemas.TABLES if k.startswith(f"{ns}."))

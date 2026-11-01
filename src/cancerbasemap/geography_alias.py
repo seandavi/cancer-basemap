@@ -75,7 +75,7 @@ every SCP-era recode named in #26); 1970/1980 are not read. Add a row --
 citing the matching decade page -- if an older pure recode turns out to
 matter to a landed source.
 
-Verified against the real Gazetteer (2026-09-18, `canceronice gazetteer
+Verified against the real Gazetteer (2026-09-18, `cancerbasemap gazetteer
 --year 2010` and `--year 2026`, ad hoc -- not a pytest test, since it hits
 the network): every `old_geo_id` here that postdates the 2010 vintage
 (Shannon/Oglala Lakota, Wade Hampton/Kusilvak, both 2015) is present in the
@@ -83,7 +83,7 @@ landed 2010 geography.unit and absent from 2026's, with `new_geo_id` the
 reverse. Dade/Miami-Dade (1997) predates 2010, so its `new_geo_id` is
 present in BOTH landed vintages and `old_geo_id` in neither -- the Gazetteer
 has never carried the retired code, which is the correct outcome for a
-recode that happened before cancerOnIce's earliest landed vintage, not a
+recode that happened before Cancer Basemap's earliest landed vintage, not a
 gap in this table.
 
 A join that resolves an old code before it ever reaches geography.unit

@@ -3,10 +3,10 @@ project:
   output-dir: _site
 
 website:
-  title: "Catchment Lake"
+  title: "Cancer Basemap"
   site-url: https://canceronice-docs.seandavi.workers.dev
   page-footer:
-    left: "Code: [MIT](https://github.com/seandavi/cancer-on-ice/blob/main/LICENSE). Data: each source keeps its own terms — see [Sources](/sources.qmd)."
+    left: "Code: [MIT](https://github.com/seandavi/cancer-basemap/blob/main/LICENSE). Data: each source keeps its own terms — see [Sources](/sources.qmd)."
     # Bump this string by hand alongside catalog-release below whenever the
     # site's build-time extracts (home map, dictionary, sources, recipes) are
     # refreshed against a new catalog release — there is no automated check.
@@ -31,7 +31,7 @@ website:
         target: _blank
       - icon: github
         text: "GitHub ↗"
-        href: https://github.com/seandavi/cancer-on-ice
+        href: https://github.com/seandavi/cancer-basemap
         target: _blank
   sidebar:
     - title: "Start here"
@@ -74,7 +74,7 @@ format:
              which only resolves via an import map (see explorer/public/index.html for
              the same fix) — and an import map must be present before any module
              script on the page runs, hence this lives in <head> via include-in-header
-             rather than in an {ojs} cell. See cancer-on-ice#119. -->
+             rather than in an {ojs} cell. See cancer-basemap#119. -->
         <script type="importmap">
         { "imports": { "apache-arrow": "https://cdn.jsdelivr.net/npm/apache-arrow@17.0.0/+esm" } }
         </script>

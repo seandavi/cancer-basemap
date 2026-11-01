@@ -36,7 +36,7 @@ from pathlib import Path
 import pytest
 from pyiceberg.expressions import EqualTo
 
-from canceronice import cancer_site, catalog, scp
+from cancerbasemap import cancer_site, catalog, scp
 
 FIX = Path(__file__).parent
 V1_INC, V1_MORT = str(FIX / "tiny_scp_v1_incidence.csv"), str(FIX / "tiny_scp_v1_mortality.csv")
@@ -49,8 +49,8 @@ REL = "2026.09"
 
 @pytest.fixture
 def cat(tmp_path, monkeypatch):
-    monkeypatch.setenv("CANCERONICE_WAREHOUSE", str(tmp_path))
-    monkeypatch.delenv("CANCERONICE_URI", raising=False)
+    monkeypatch.setenv("CANCERBASEMAP_WAREHOUSE", str(tmp_path))
+    monkeypatch.delenv("CANCERBASEMAP_URI", raising=False)
     return catalog()
 
 

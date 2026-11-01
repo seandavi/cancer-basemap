@@ -12,7 +12,7 @@ import pytest
 from pyiceberg.exceptions import NoSuchTableError
 from pyiceberg.expressions import EqualTo
 
-from canceronice import ejscreen, merge
+from cancerbasemap import ejscreen, merge
 
 REL = "2026.08"
 FIX = Path(__file__).parent

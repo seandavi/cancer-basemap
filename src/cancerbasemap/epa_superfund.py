@@ -136,7 +136,7 @@ from pyiceberg.expressions import EqualTo
 
 from . import merge
 
-USER_AGENT = "cancerOnIce/1.0 (+https://github.com/seandavi/cancer-on-ice)"
+USER_AGENT = "cancerbasemap/1.0 (+https://github.com/seandavi/cancer-basemap)"
 URL_STATUS = ("https://services.arcgis.com/cJ9YHowT8TU7DUyn/arcgis/rest/services/"
              "Superfund_National_Priorities_List_(NPL)_Sites_with_Status_Information/"
              "FeatureServer/0/query")

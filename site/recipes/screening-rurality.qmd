@@ -9,7 +9,7 @@ Scoped to one state rather than the whole country: PLACES's own PLACES
 partition is written as one very large Parquet file per release, and a
 national-scope live read of it is exactly the pattern that fails
 intermittently in this DuckDB-WASM build
-([cancer-on-ice#120](https://github.com/seandavi/cancer-on-ice/issues/120)).
+([cancer-basemap#120](https://github.com/seandavi/cancer-basemap/issues/120)).
 One state at a time stays well inside the sizes that read reliably.
 
 {{< include _duckdb-shared.qmd >}}

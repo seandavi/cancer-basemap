@@ -18,5 +18,5 @@ name:
   level.
 - [**The licence gate**](licence-gate.qmd) — what's excluded from a
   source, and why, decided before ingest, not discovered by a user later.
-- [**Catchment Lake and Cancer InFocus**](cancer-infocus.qmd) — upstream,
+- [**Cancer Basemap and Cancer InFocus**](cancer-infocus.qmd) — upstream,
   not a competitor.

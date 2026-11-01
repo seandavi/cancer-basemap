@@ -29,7 +29,7 @@ from pathlib import Path
 import pytest
 from pyiceberg.expressions import EqualTo
 
-from canceronice import epa_sdwis
+from cancerbasemap import epa_sdwis
 
 REL = "2026.09"
 DIR = Path(__file__).parent

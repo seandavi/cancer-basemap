@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Parity diff between a locally-supplied Cancer InFocus (CIF) national
-archive extraction and the cancer-on-ice ("Catchment Lake") public Iceberg
+archive extraction and the Cancer Basemap public Iceberg
 catalog, attached read-only over the anonymous icegate endpoint (see
 docs/clients/duckdb-cli.md).
 

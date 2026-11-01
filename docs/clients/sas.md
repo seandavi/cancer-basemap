@@ -5,7 +5,7 @@ DuckDB on one side of a boundary SAS never crosses. In order of how little
 they assume about your SAS environment:
 
 1. **DuckDB CLI &rarr; CSV/Parquet &rarr; `PROC IMPORT`** (or the Parquet
-   LIBNAME engine on Viya). [`sas/catchmentlake.sas`](../../sas/catchmentlake.sas)
+   LIBNAME engine on Viya). [`sas/cancerbasemap.sas`](../../sas/cancerbasemap.sas)
    implements this as a macro. Requires XCMD (SAS's setting that allows
    shelling out) enabled for the session — `FILENAME PIPE` shells out to
    run `duckdb`. **NOXCMD is the default on many managed SAS 9.4 servers and
@@ -36,7 +36,7 @@ they assume about your SAS environment:
    `ATTACH ... AS coi` baked in via a `.duckdbrc`-style init script your site
    controls — neither of which this project has built or tested.
 
-See [`sas/catchmentlake.sas`](../../sas/catchmentlake.sas) for the macro
+See [`sas/cancerbasemap.sas`](../../sas/cancerbasemap.sas) for the macro
 implementing route 1, with a "NOT YET RUN IN SAS" banner and a checklist for
 whoever can run SAS. What **was** verified on the DuckDB side of the
 boundary:
@@ -61,10 +61,10 @@ county:08031,PLACES,2025,PLACES:MAMMOUSE:age_adjusted,73.1,66.3,78.9,reported
 county:48301,PLACES,2025,PLACES:MAMMOUSE:age_adjusted,,,,suppressed_small_count
 ```
 
-That's the exact CSV `%catchmentlake()`'s `FILENAME PIPE` would hand SAS:
+That's the exact CSV `%cancerbasemap()`'s `FILENAME PIPE` would hand SAS:
 a header row, a FIPS code with a leading zero preserved (`county:08001`,
 because `geo_id` is a string like `'county:08031'`, never a bare number —
-see the caveat in `sas/catchmentlake.sas` about a bare `fips` column
+see the caveat in `sas/cancerbasemap.sas` about a bare `fips` column
 instead), and a suppressed cell (`county:48301`) as an **empty field**
 (`-nullvalue ''`), which `PROC IMPORT`/a numeric `INPUT` reads as a genuine
 SAS missing value, with `value_status` still telling you why.

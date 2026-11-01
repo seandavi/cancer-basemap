@@ -10,7 +10,7 @@ conflating them is the characteristic error in this domain.
 | --- | --- | --- |
 | **Period** | `period_start`, `period_end` | the time the estimate *describes* |
 | **Source release** | `source_release` | the upstream edition that *published* it |
-| **Catalog validity** | `valid_from`, `valid_to` | when Catchment Lake first/last carried this version of the row |
+| **Catalog validity** | `valid_from`, `valid_to` | when Cancer Basemap first/last carried this version of the row |
 
 ## A real example: PLACES 2024 vs. 2025
 

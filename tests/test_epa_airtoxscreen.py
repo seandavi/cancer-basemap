@@ -18,7 +18,7 @@ from pathlib import Path
 import pytest
 from pyiceberg.expressions import EqualTo
 
-from canceronice import epa_airtoxscreen as airtox, merge
+from cancerbasemap import epa_airtoxscreen as airtox, merge
 
 REL = "2026.08"
 FIX = Path(__file__).parent

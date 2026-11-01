@@ -1,4 +1,4 @@
-# cancerOnIce — Specification (draft)
+# Cancer Basemap — Specification (draft)
 
 > Sibling of [biocOnIce](https://github.com/seandavi/bioc-on-ice), served
 > through [icegate](https://github.com/seandavi/icegate), sourced through
@@ -6,25 +6,21 @@
 
 ## Names
 
-**Catchment Lake** is the public-facing name — papers, CARDS talks, grant
-narratives, the explorer's title. **cancerOnIce** is the technical identity —
-repository, Iceberg catalog name, icegate hostname, federation-registry entry —
-kept parallel to biocOnIce.
+**Cancer Basemap** is the product name — repository, papers, CARDS talks, grant
+narratives, the explorer's title. A basemap is the common reference layer a map
+is drawn on, which is what this is under catchment dashboards such as Cancer
+InFocus. The Python package and CLI are `cancerbasemap` (`basemap` on PyPI is
+matplotlib's toolkit). The earlier names, "cancerOnIce" and "Catchment Lake",
+are retired (ADR-0001 § Infrastructure of its own).
 
-Talking point, verbatim:
-
-> *Catchment Lake, built on the cancerOnIce catalog.*
-
-Why the lake name works for this audience: in hydrology a catchment is the land
-that drains into a lake. Cancer centers have catchments; this is the lake they
-drain into. Sources are the tributaries, and every release that has ever flowed
-in stays in the lake. "Catchment" is the CCSG community's own word, so the name
-states the cancer-center application without jargon.
+The Iceberg side keeps the old name until it is retired: the `canceronice`
+bucket and catalog, the `icegate-canceronice` hostname, `canceronice-*` secrets,
+and the literal `source = 'CANCERONICE'` on curated rows.
 
 Terminology discipline: platform docs already call cdsci-lake a lake, and
 biocOnIce ADR-0012 separates DuckLakes (ETL) from icegate catalogs
-(publication). Write "cdsci-lake (ETL)" versus "Catchment Lake (published)"
-wherever both appear, and never call cdsci-lake the catalog or Catchment Lake
+(publication). Write "cdsci-lake (ETL)" versus "Cancer Basemap (published)"
+wherever both appear, and never call cdsci-lake the catalog or Cancer Basemap
 the ETL layer.
 
 ## Vision
@@ -64,7 +60,7 @@ vintage, or a dashboard that has since silently changed.
 
 ## Non-goals
 
-cancerOnIce will not:
+Cancer Basemap will not:
 
 - host record-level, DUA-gated, or restricted data of any kind — public
   aggregates only (see *Licence gate*);
@@ -80,10 +76,10 @@ cancerOnIce will not:
 
 # Landscape
 
-What exists, what it does well, and where cancerOnIce sits. Surveyed September
+What exists, what it does well, and where Cancer Basemap sits. Surveyed September
 2026.
 
-| Resource | What it is | Strength | Gap cancerOnIce fills |
+| Resource | What it is | Strength | Gap Cancer Basemap fills |
 | --- | --- | --- | --- |
 | **Cancer InFocus / CIFTools** (UK Markey) | Data gatherer (county list in → standardized files out) + Shiny app; code under a no-cost licence; downloads at CancerInFocus.org | The de facto standard: all NCI-designated centers covered, 35 licensed adopters by Oct 2024; community around the CARDS group and the Catchment Area Data Conference | Snapshot files, no history; not queryable across centers; its county incidence comes from the USCS Incidence Analytic Dataset through special access, which a public lake cannot republish |
 | **NCI GIS Portal** (Cancer Atlas, catchment-area viewer, data-source index) | NCI's geospatial hub | Authoritative; its data-source index is a good candidate list | Visualization-first; catchment viewer is not downloadable |
@@ -93,7 +89,7 @@ What exists, what it does well, and where cancerOnIce sits. Surveyed September
 | Harvard LIL data.gov archive, ICPSR DataLumos | General archives of federal data files | Broad coverage | Files, not a joinable model; no geography/time semantics |
 | PolicyMap, Social Explorer | Commercial | Polished | Closed, paid |
 
-**Positioning.** cancerOnIce should not compete with Cancer InFocus; it should
+**Positioning.** Cancer Basemap should not compete with Cancer InFocus; it should
 be the thing CIF (and ECCO, and any center's own tool) reads from. Concretely:
 an export recipe that writes CIFTools-shaped files for any catchment from the
 lake is a better adoption path than a rival dashboard, and the CARDS group is
@@ -143,7 +139,7 @@ describes the writers and gateway that still exist until the retirement step.
 **Changing (ADR-0001):** the public product becomes one whole-product bundle
 a month, kept a year on R2 and permanently on Hugging Face; the per-dataset
 model below, and its "never pruned" promise, is replaced. Until then:
-cancerOnIce publishes **dataset releases** (biocOnIce ADR-0013, cdsci-lake
+Cancer Basemap publishes **dataset releases** (biocOnIce ADR-0013, cdsci-lake
 ADR-0025): each dataset is an immutable full snapshot with a release id
 (`YYYY-MM-DD`, or `YYYY-MM-DD.N` for a second release the same day) and a
 release date, on the dataset's own cadence and retention (`keep_last`, default
@@ -436,7 +432,7 @@ at the upstream URL it was landed from. Captured from the SQL a module
 already writes, never inferred from read/write order. Rebuildable, so
 `merge.write` scopes it on `(release, job, to_table)` — no Type 2 history, same as
 `provenance.release`. Full column contract in `schemas.py`; capture API in
-`canceronice.lineage`. Wired module by module — see AGENTS.md / the module's
+`cancerbasemap.lineage`. Wired module by module — see AGENTS.md / the module's
 own docstring for whether a given source calls it yet.
 
 ---

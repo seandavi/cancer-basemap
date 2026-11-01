@@ -87,7 +87,7 @@ Every fact in the lake joins through `geography.unit` by `geo_id`, but a
 makes that explicit, and it's why every recipe on this site names a vintage
 on its geography join (`u.vintage = 2026`) instead of trusting a measure's
 own `geo_vintage` column — see [Time axes](time-axes.qmd) and
-[cancer-on-ice#21](https://github.com/seandavi/cancer-on-ice/issues/21) for
+[cancer-basemap#21](https://github.com/seandavi/cancer-basemap/issues/21) for
 the open question that makes this necessary today. `geography.alias`
 resolves an old code that was renamed or recoded (not reshaped) to its
 current one, so a join on a retired code still finds its record instead of

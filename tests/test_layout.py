@@ -11,7 +11,7 @@ import pytest
 from pyiceberg.expressions import AlwaysTrue
 from pyiceberg.table import TableProperties
 
-from canceronice import merge, schemas
+from cancerbasemap import merge, schemas
 
 REL1 = "2026.08"
 

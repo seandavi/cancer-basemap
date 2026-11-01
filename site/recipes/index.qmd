@@ -10,7 +10,7 @@ the SQL it ran, so you can copy it straight into your own DuckDB.
 Large-table reads can fail intermittently in a long-lived browser tab — a
 resource-accumulation limit in the pinned DuckDB-WASM build, not a bug in
 any one query (tracked in
-[cancer-on-ice#120](https://github.com/seandavi/cancer-on-ice/issues/120)).
+[cancer-basemap#120](https://github.com/seandavi/cancer-basemap/issues/120)).
 Each page's Retry button rebuilds its DuckDB-WASM instance from scratch,
 which clears most failures; if Retry doesn't help, a **hard refresh**
 (shift-reload) clears a cached failed response that a plain reload can
@@ -27,6 +27,6 @@ otherwise keep re-serving from the browser's own cache.
 ## Stubs — blocked on other work
 
 - [What changed across State Cancer Profiles vintages](scp-vintages.qmd) —
-  blocked on [#117](https://github.com/seandavi/cancer-on-ice/issues/117).
+  blocked on [#117](https://github.com/seandavi/cancer-basemap/issues/117).
 - [Catchment report](catchment-report.qmd) — blocked on
-  [#43](https://github.com/seandavi/cancer-on-ice/issues/43).
+  [#43](https://github.com/seandavi/cancer-basemap/issues/43).

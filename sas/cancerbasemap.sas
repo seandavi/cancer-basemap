@@ -9,8 +9,8 @@
  executed by SAS itself.
 
  If you can run this, please report back on GitHub issue #115
- (seandavi/cancer-on-ice) with:
-   [ ] SAS 9.4 on Windows  -- does %catchmentlake() run as written?
+ (seandavi/cancer-basemap) with:
+   [ ] SAS 9.4 on Windows  -- does %cancerbasemap() run as written?
    [ ] SAS 9.4 on Linux    -- same, and does the `duckdb` path need changes?
    [ ] SAS Viya            -- does PROC IMPORT still apply, or did you use
                               the Parquet LIBNAME engine / PROC PYTHON instead?
@@ -32,7 +32,7 @@
                               quoting likely needs to change there.
 ******************************************************************************/
 
-/* catchmentlake: run a read-only SQL query against the Catchment Lake
+/* cancerbasemap: run a read-only SQL query against the Cancer Basemap
    (coi.* in the query text) and land the result in a SAS dataset.
 
    Route 1 from issue #115: DuckDB does the Iceberg reading; SAS never talks
@@ -48,7 +48,7 @@
        "If XCMD is off" below.
 
    Usage:
-     %catchmentlake(
+     %cancerbasemap(
        query=SELECT geo_id, value, value_status
              FROM coi.measure.observation
              WHERE source = 'PLACES' AND measure_id = 'PLACES:MAMMOUSE:age_adjusted'
@@ -56,7 +56,7 @@
        out=work.mammo
      );
 */
-%macro catchmentlake(query=,
+%macro cancerbasemap(query=,
                       out=,
                       duckdb=duckdb,
                       endpoint=https://icegate-canceronice.seandavi.workers.dev,
@@ -87,9 +87,9 @@
 
   filename clqry clear;
   filename clcsv clear;
-%mend catchmentlake;
+%mend cancerbasemap;
 
-/* catchmentlake_fips: same as above, but for queries that select a bare
+/* cancerbasemap_fips: same as above, but for queries that select a bare
    FIPS-shaped character column (e.g. geography.unit.fips) where leading
    zeros matter and must not be left to PROC IMPORT's guessing. Reads the
    pipe with an explicit INFORMAT/INPUT instead. Columns and their SAS types
@@ -97,14 +97,14 @@
    unlike PROC IMPORT, cannot discover them from the CSV header.
 
    Usage:
-     %catchmentlake_fips(
+     %cancerbasemap_fips(
        query=SELECT fips, name FROM coi.geography.unit
              WHERE level='county' AND vintage=2020 AND valid_to IS NULL;,
        out=work.counties,
        vars=fips $5. name $100.
      );
 */
-%macro catchmentlake_fips(query=, out=, vars=,
+%macro cancerbasemap_fips(query=, out=, vars=,
                            duckdb=duckdb,
                            endpoint=https://icegate-canceronice.seandavi.workers.dev);
 
@@ -126,7 +126,7 @@
 
   filename clqry clear;
   filename clcsv clear;
-%mend catchmentlake_fips;
+%mend cancerbasemap_fips;
 
 /******************************************************************************
  If XCMD is off

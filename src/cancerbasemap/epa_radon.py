@@ -144,7 +144,7 @@ from pyiceberg.expressions import AlwaysTrue, And, EqualTo, In
 from . import merge
 
 URL = "https://www.epa.gov/system/files/documents/2024-05/radon_zones-spreadsheet.xls"
-USER_AGENT = "cancerOnIce/1.0 (+https://github.com/seandavi/cancer-on-ice)"
+USER_AGENT = "cancerbasemap/1.0 (+https://github.com/seandavi/cancer-basemap)"
 EDITION = "1993"
 GEO_VINTAGE = 2010
 MEASURE_ID = "EPA_RADON:zone"

@@ -151,7 +151,7 @@ from pyiceberg.expressions import And, EqualTo, In
 
 from . import merge
 
-USER_AGENT = "cancerOnIce/1.0 (+https://github.com/seandavi/cancer-on-ice)"
+USER_AGENT = "cancerbasemap/1.0 (+https://github.com/seandavi/cancer-basemap)"
 URL = "https://data.cdc.gov/api/views/ee48-w5t6/rows.csv?accessType=DOWNLOAD"
 
 COLUMNS = ("Vaccine/Sample", "Dose", "Geography Type", "Geography", "Survey Year",

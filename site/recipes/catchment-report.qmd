@@ -8,5 +8,5 @@ catchment geographies, with source, release and interval, as of a named
 catalog release (SPEC.md's "CCSG hook") — needs the `catchment.center` /
 `catchment.member` namespace and a `catchments.yaml` of center-declared
 geographies, neither of which exists yet. Tracked in
-[cancer-on-ice#43](https://github.com/seandavi/cancer-on-ice/issues/43).
+[cancer-basemap#43](https://github.com/seandavi/cancer-basemap/issues/43).
 :::

@@ -38,7 +38,7 @@ import pyarrow as pa
 import pytest
 from pyiceberg.expressions import EqualTo
 
-from canceronice import cdc_svi, merge
+from cancerbasemap import cdc_svi, merge
 
 REL = "2026.08"
 FIX = Path(__file__).parent

@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from canceronice import catalog, ers_rucc, lineage, places
+from cancerbasemap import catalog, ers_rucc, lineage, places
 
 REL = "2026.08"
 RUCC_CSV = str(Path(__file__).parent / "tiny_ers_rucc.csv")
@@ -18,8 +18,8 @@ RUCC_CSV = str(Path(__file__).parent / "tiny_ers_rucc.csv")
 
 @pytest.fixture
 def cat(tmp_path, monkeypatch):
-    monkeypatch.setenv("CANCERONICE_WAREHOUSE", str(tmp_path / "warehouse"))
-    monkeypatch.delenv("CANCERONICE_URI", raising=False)
+    monkeypatch.setenv("CANCERBASEMAP_WAREHOUSE", str(tmp_path / "warehouse"))
+    monkeypatch.delenv("CANCERBASEMAP_URI", raising=False)
     return catalog()
 
 

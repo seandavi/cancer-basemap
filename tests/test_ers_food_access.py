@@ -33,7 +33,7 @@ import pyarrow as pa
 import pytest
 from pyiceberg.expressions import EqualTo
 
-from canceronice import ers_food_access, merge
+from cancerbasemap import ers_food_access, merge
 
 REL = "2026.08"
 CSV_2019 = str(Path(__file__).parent / "tiny_ers_food_access_2019.csv")

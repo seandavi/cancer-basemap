@@ -1,9 +1,9 @@
 ---
-title: "Catchment Lake"
+title: "Cancer Basemap"
 jupyter: coi-docs
 ---
 
-Catchment Lake publishes population cancer data — screening, risk factors,
+Cancer Basemap publishes population cancer data — screening, risk factors,
 the social and environmental context around them, and the places people get
 care — as Apache Iceberg tables keyed on geography and time. Every release
 every source has ever published stays queryable, from DuckDB, R, Python, or

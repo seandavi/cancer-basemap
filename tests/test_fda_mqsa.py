@@ -18,7 +18,7 @@ import pyarrow as pa
 import pytest
 from pyiceberg.expressions import EqualTo
 
-from canceronice import fda_mqsa, merge
+from cancerbasemap import fda_mqsa, merge
 
 REL = "2026.09"
 MQSA_TXT = str(Path(__file__).parent / "tiny_fda_mqsa.txt")

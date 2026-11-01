@@ -1,6 +1,4 @@
-# cancerOnIce
-
-> *Catchment Lake, built on the cancerOnIce catalog.*
+# Cancer Basemap
 
 Population cancer data — incidence, mortality, screening, risk factors, social
 and environmental context, and the places people get care — published as

@@ -1,14 +1,14 @@
-# Anonymous connection to cancerOnIce's Iceberg catalog via icegate.
+# Anonymous connection to Cancer Basemap's Iceberg catalog via icegate.
 #
 # No token, no account: icegate serves public aggregates read-only. Ported
 # from bioc-on-ice's r/connect.R (same pattern, different catalog/endpoint).
 #
 # Usage:
 #   source("r/connect.R")
-#   con <- catchmentlake_connect()
+#   con <- cancerbasemap_connect()
 #   DBI::dbGetQuery(con, "SELECT * FROM coi.geography.unit LIMIT 5")
 
-catchmentlake_connect <- function(endpoint = "https://icegate-canceronice.seandavi.workers.dev",
+cancerbasemap_connect <- function(endpoint = "https://icegate-canceronice.seandavi.workers.dev",
                                    catalog = "canceronice",
                                    alias = "coi") {
   con <- DBI::dbConnect(duckdb::duckdb())
@@ -32,7 +32,7 @@ catchmentlake_connect <- function(endpoint = "https://icegate-canceronice.seanda
 }
 
 if (sys.nframe() == 0) {
-  con <- catchmentlake_connect()
+  con <- cancerbasemap_connect()
   print(DBI::dbGetQuery(con, "SHOW ALL TABLES"))
   DBI::dbDisconnect(con, shutdown = TRUE)
 }

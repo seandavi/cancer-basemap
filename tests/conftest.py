@@ -1,10 +1,10 @@
 import pytest
 
-from canceronice import catalog
+from cancerbasemap import catalog
 
 
 @pytest.fixture
 def cat(tmp_path, monkeypatch):
-    monkeypatch.setenv("CANCERONICE_WAREHOUSE", str(tmp_path))
-    monkeypatch.delenv("CANCERONICE_URI", raising=False)
+    monkeypatch.setenv("CANCERBASEMAP_WAREHOUSE", str(tmp_path))
+    monkeypatch.delenv("CANCERBASEMAP_URI", raising=False)
     return catalog()

@@ -146,7 +146,7 @@ from pyiceberg.expressions import AlwaysTrue, EqualTo
 
 from . import merge
 
-USER_AGENT = "cancer-on-ice/0.1 (+https://github.com/seandavi/cancer-on-ice)"
+USER_AGENT = "cancerbasemap/0.1 (+https://github.com/seandavi/cancer-basemap)"
 BASE = "https://www2.census.gov/geo/docs/maps-data/data/gazetteer"
 STATE_FIPS_URL = "https://www2.census.gov/geo/docs/reference/state.txt"
 STATE_COLUMNS = ("STATE", "STUSAB", "STATE_NAME", "STATENS")

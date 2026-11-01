@@ -1,4 +1,4 @@
-# Deploying the cancerOnIce catalog
+# Deploying the Cancer Basemap catalog
 
 Written 2026-09-18 while provisioning, from the commands actually run. biocOnIce
 never recorded how its bucket and catalog were created; this is that runbook.
@@ -74,9 +74,9 @@ What they do, for the record (this catalog was provisioned by hand on
 ## Ingest
 
 ```sh
-export CANCERONICE_URI=https://icegate-canceronice.seandavi.workers.dev
-export CANCERONICE_TOKEN=$(gcloud secrets versions access latest --secret canceronice-icegate-key-seandavi --project cdsci-infra)
-uv run canceronice init
+export CANCERBASEMAP_URI=https://icegate-canceronice.seandavi.workers.dev
+export CANCERBASEMAP_TOKEN=$(gcloud secrets versions access latest --secret canceronice-icegate-key-seandavi --project cdsci-infra)
+uv run cancerbasemap init
 ```
 
 ## Scheduled snapshot landers (#107)
@@ -89,11 +89,11 @@ there by cdsci-lake. Each run writes under a dated label (`2026.09.19`), which
 sorts between the monthly labels `2026.09` and `2026.10`.
 
 ```sh
-cp systemd/canceronice-snapshots.{service,timer} ~/.config/systemd/user/   # re-copy on change
+cp systemd/cancerbasemap-snapshots.{service,timer} ~/.config/systemd/user/   # re-copy on change
 systemctl --user daemon-reload
-systemctl --user enable --now canceronice-snapshots.timer
-systemctl --user start canceronice-snapshots.service    # once by hand, then:
-journalctl --user -u canceronice-snapshots -n 50
+systemctl --user enable --now cancerbasemap-snapshots.timer
+systemctl --user start cancerbasemap-snapshots.service    # once by hand, then:
+journalctl --user -u cancerbasemap-snapshots -n 50
 ```
 
 Not scheduled yet: the monthly "is there a new edition?" check for release-axis
@@ -114,9 +114,9 @@ Run this once against the live catalog, after deploying this PR's code, for
 every table that has real data:
 
 ```sh
-export CANCERONICE_URI=https://icegate-canceronice.seandavi.workers.dev
-export CANCERONICE_TOKEN=$(gcloud secrets versions access latest --secret canceronice-icegate-key-seandavi --project cdsci-infra)
-uv run canceronice rewrite --all
+export CANCERBASEMAP_URI=https://icegate-canceronice.seandavi.workers.dev
+export CANCERBASEMAP_TOKEN=$(gcloud secrets versions access latest --secret canceronice-icegate-key-seandavi --project cdsci-infra)
+uv run cancerbasemap rewrite --all
 ```
 
 It reads each table's current data, sorts it, and commits one Iceberg
@@ -142,9 +142,9 @@ always supplies one, defaulting to the retrieval date), so the rebuild below
 is a schema-only change, not a backfill:
 
 ```python
-from canceronice import catalog
+from cancerbasemap import catalog
 
-cat = catalog()  # CANCERONICE_URI / CANCERONICE_TOKEN set, as in "Ingest" above
+cat = catalog()  # CANCERBASEMAP_URI / CANCERBASEMAP_TOKEN set, as in "Ingest" above
 table = cat.load_table("provenance.release")
 # allow_incompatible_changes=True: pyiceberg refuses optional -> required by
 # default because it cannot check existing rows for NULL; every row here

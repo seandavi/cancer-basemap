@@ -83,7 +83,7 @@ inferred from the edition label alone:
   (no defined 2023 county assignment) while `TractFIPS20` is always
   populated. `geo_id` is derived from **`TractFIPS20`**, not `TractFIPS23`:
   it is always present, and it is what lines up with the 2020-vintage
-  geography this cancerOnIce release already carries elsewhere
+  geography this Cancer Basemap release already carries elsewhere
   (`census_gazetteer.py`'s vintage-2020 landing also uses Connecticut's
   legacy counties, "present through the 2020 files" per its own docstring)
   -- consistent by verification, not forced to match (AGENTS.md: "Do not
@@ -122,7 +122,7 @@ EDITIONS = {
     "2020": "https://www.ers.usda.gov/media/5443/2020-rural-urban-commuting-area-codes-census-tracts.csv",
 }
 DEFAULT_EDITION = "2020"
-USER_AGENT = "cancerOnIce/1.0 (+https://github.com/seandavi/cancer-on-ice)"
+USER_AGENT = "cancerbasemap/1.0 (+https://github.com/seandavi/cancer-basemap)"
 
 # Census-tract boundary vintage each edition classifies -- see module
 # docstring "Geography vintage" for the evidence.

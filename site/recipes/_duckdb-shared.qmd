@@ -1,5 +1,5 @@
 <!-- Shared DuckDB-WASM wiring for every live recipe page — one instance per
-     page, rebuilt only by an explicit Retry (see cancer-on-ice#119/#120:
+     page, rebuilt only by an explicit Retry (see cancer-basemap#119/#120:
      stacking several undisposed instances in one tab was the actual cause
      of the "Maximum call stack size exceeded" failure originally blamed on
      query size). Included with {{< include _duckdb-shared.qmd >}} at the
@@ -126,7 +126,7 @@ function renderStatus(dbState, queryState) {
   if (dbState.status === "error")
     return html`<p class="status-error"><strong>Catalog unreachable:</strong> ${dbState.error?.message ?? dbState.error}.
       Large-table reads can fail intermittently in a long-lived tab
-      (<a href="https://github.com/seandavi/cancer-on-ice/issues/120">cancer-on-ice#120</a>) —
+      (<a href="https://github.com/seandavi/cancer-basemap/issues/120">cancer-basemap#120</a>) —
       try Retry, or a hard refresh if Retry doesn't help.</p><p>${retryButton}</p>`;
   if (dbState.status !== "ready")
     return html`<p class="recipe-status"><em>Connecting to the catalog and loading DuckDB-WASM…</em></p>`;

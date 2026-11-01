@@ -1,4 +1,4 @@
--- Join a SEER*Stat rate-session export to the Catchment Lake by county FIPS.
+-- Join a SEER*Stat rate-session export to the Cancer Basemap by county FIPS.
 --
 -- docs/examples/seerstat_synthetic_export.csv is SYNTHETIC: five Colorado
 -- counties, invented breast cancer counts/rates for illustration only. It is

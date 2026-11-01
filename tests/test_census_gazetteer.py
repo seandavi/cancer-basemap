@@ -20,7 +20,7 @@ from pathlib import Path
 
 import pytest
 
-from canceronice import census_gazetteer as gz
+from cancerbasemap import census_gazetteer as gz
 
 REL = "2026.09"
 FIX = Path(__file__).parent

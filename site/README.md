@@ -1,4 +1,4 @@
-# Catchment Lake docs site
+# Cancer Basemap docs site
 
 A [Quarto](https://quarto.org/) website: static pages plus build-time
 queries against the live catalog (Dictionary, Sources, Concepts, the Home
@@ -11,7 +11,7 @@ is the real skeleton (#122).
 ## Set up the build-time Python kernel
 
 Build-time chunks (`jupyter: coi-docs` in a page's front matter) run this
-repo's own `canceronice` package against the live catalog. Set up a small
+repo's own `cancerbasemap` package against the live catalog. Set up a small
 `uv`-managed venv once, registered as a Jupyter kernel — cheaper than
 compiling R's `duckdb` package, and this repo's own dependency is already
 `duckdb` + `pyiceberg`, not R:
@@ -20,8 +20,8 @@ compiling R's `duckdb` package, and this repo's own dependency is already
 cd site
 uv venv .venv-docs
 uv pip install --python .venv-docs duckdb pandas ipykernel pyyaml nbformat nbclient jupyter_client  # last four: quarto's own jupyter control script needs them
-uv pip install --python .venv-docs -e ..                          # `import canceronice.schemas` for the Dictionary/Sources pages
-.venv-docs/bin/python -m ipykernel install --user --name coi-docs --display-name "cancerOnIce docs"
+uv pip install --python .venv-docs -e ..                          # `import cancerbasemap.schemas` for the Dictionary/Sources pages
+.venv-docs/bin/python -m ipykernel install --user --name coi-docs --display-name "Cancer Basemap docs"
 ```
 
 `.venv-docs/` is gitignored; re-run the commands above on a fresh checkout
@@ -107,7 +107,7 @@ until someone actually deploys.
 `.github/workflows/ci.yml` runs `quarto render site` on every push/PR. It
 relies on the committed `_freeze/` cache and `data/home_map.json` above for
 actual page content, so it needs no network access and no working
-`duckdb`/`canceronice` install. It does, however, still need a *registered*
+`duckdb`/`cancerbasemap` install. It does, however, still need a *registered*
 `coi-docs` kernel — Quarto's Jupyter engine resolves a kernel by name before
 it will even consult the freeze cache, confirmed to fail (even with
 `--no-execute` and a fully up-to-date freeze entry) if no kernel by that

@@ -26,7 +26,7 @@ import pyarrow as pa
 import pytest
 from pyiceberg.expressions import EqualTo
 
-from canceronice import ers_ruca, merge
+from cancerbasemap import ers_ruca, merge
 
 REL = "2026.08"
 XLSX_2010 = str(Path(__file__).parent / "tiny_ruca_2010.xlsx")

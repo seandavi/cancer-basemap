@@ -128,7 +128,7 @@ from pyiceberg.expressions import And, EqualTo
 
 from . import merge
 
-USER_AGENT = "cancerOnIce/1.0 (+https://github.com/seandavi/cancer-on-ice)"
+USER_AGENT = "cancerbasemap/1.0 (+https://github.com/seandavi/cancer-basemap)"
 
 YEARS = ("2018", "2019")
 

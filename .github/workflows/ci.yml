@@ -27,13 +27,13 @@ jobs:
       # by that name is registered. But it doesn't need a *working* one:
       # with a valid freeze cache a whole-project render never actually
       # launches it, so this installs just enough to satisfy the kernel
-      # lookup (no duckdb/pandas/canceronice — see site/README.md for the
+      # lookup (no duckdb/pandas/cancerbasemap — see site/README.md for the
       # full local dev kernel).
       - run: pip install jupyter_core jupyter_client nbclient nbformat ipykernel pyyaml
-      - run: python -m ipykernel install --user --name coi-docs --display-name "cancerOnIce docs"
+      - run: python -m ipykernel install --user --name coi-docs --display-name "Cancer Basemap docs"
       # Relies on the committed site/_freeze/ cache and site/data/home_map.json
       # (see site/README.md) for actual page content — no network access, no
-      # real canceronice/duckdb install. A page whose source changed without
+      # real cancerbasemap/duckdb install. A page whose source changed without
       # a local re-render first will fail here rather than silently
       # re-executing.
       - run: quarto render site
