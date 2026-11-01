@@ -61,6 +61,16 @@ quarto render .
 git add extracts/home_map.json _freeze
 ```
 
+## Theme and data pages
+
+`theme/` is bioc-infrastructure's archify theme in glacier blue and ember
+orange (ADR-0001 § The site; palette in `theme/basemap-{light,dark}.scss`).
+`releases.qmd`, `playground.qmd` and `guides/versions-and-citation.qmd` have no
+build-time code: they read `/data/` (the R2 listing and each `manifest.json`)
+and Hugging Face in the browser, so they say "No releases yet" until the first
+release is published. `shell-links.js` adds "Open in DuckDB Shell" under SQL
+examples (opt out with `.no-shell`; Iceberg examples are skipped).
+
 ## Preview
 
 ```sh

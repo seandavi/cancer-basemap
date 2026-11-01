@@ -1,0 +1,114 @@
+---
+title: Versions and citation
+description: latest vs dated releases on R2 and the permanent tags on Hugging Face, how to pin a version, and how to cite Cancer Basemap.
+---
+
+Cancer Basemap publishes one kind of release, a folder of Parquet files plus a
+DuckDB database, in two places. They hold the same tables in the same layout.
+They differ in how long they last and how you use them
+([ADR-0001](https://github.com/seandavi/cancer-basemap/blob/main/docs/adr/0001-public-releases-monthly-parquet-bundles.md)).
+[Releases](../releases.qmd) lists the ones available now.
+
+| Version | Where | Changes? | Kept | Use it by |
+|---|---|---|---|---|
+| `latest/` | `https://basemap.cancerdatasci.org/data/latest/` | with each release | always the newest | querying in place |
+| Dated | `https://basemap.cancerdatasci.org/data/v{YYYY-MM-DD}/` | never | the newest release of each of the last 12 months | querying in place |
+| Tag | Hugging Face dataset `seandavis/cancerbasemap`, git tag `YYYY-MM-DD` | never | permanently, every release | downloading, then querying locally |
+
+A release is cut on the 1st of each month, and by hand when a correction or a
+large new source release can't wait. `latest/` and the dated folders on R2 are
+served for querying in place: DuckDB `ATTACH`, `read_parquet` and the
+[playground](../playground.qmd) all read them over HTTPS. Every release is
+also pushed to Hugging Face and tagged with its date, and tags are never
+deleted. A tag is the version to cite. Download one, then query it locally.
+
+::: callout-note
+Twelve months stay on R2, so an analysis from last year's report re-runs in
+place against its pinned URL. Anything older is on Hugging Face only. A
+mid-month correction replaces its month on R2, but the release it replaced
+keeps its tag.
+:::
+
+## Which one to use
+
+- **Exploring, or building something that should track the sources:** use `latest/`.
+- **An analysis you'll rerun within the year:** pin a dated folder.
+- **A paper, a shared pipeline, an annual report, or anything you'll cite:** download the tag.
+
+## Pin a dated folder
+
+Replace `latest/` with a date. Each dated folder's `cancerbasemap.duckdb` reads
+its own Parquet files, so the views stay pinned too:
+
+```{.sql .no-shell}
+ATTACH 'https://basemap.cancerdatasci.org/data/v2026-12-01/cancerbasemap.duckdb' AS basemap (READ_ONLY);
+```
+
+To see which dates are available, open [Releases](../releases.qmd) or the
+[folder listing](https://basemap.cancerdatasci.org/data/). Folders older than
+12 months are deleted, so use a tag for anything longer.
+
+## Use a tag
+
+Every release that passes the gate is copied to the Hugging Face dataset
+`seandavis/cancerbasemap` and tagged with its date (the R2 folder
+`v2026-12-01/` is the tag `2026-12-01`). Files sit at the repository root in
+the same layout as R2 (`measure/observation.parquet`, …).
+
+Download the release with the [`hf` command-line
+tool](https://huggingface.co/docs/huggingface_hub/guides/cli) (in
+`huggingface_hub`; `uvx --from huggingface_hub hf` runs it without
+installing), then query the local files:
+
+```bash
+hf download seandavis/cancerbasemap --repo-type dataset --revision 2026-12-01 \
+  --local-dir cancerbasemap-2026-12-01
+duckdb -c "SELECT count(*) FROM 'cancerbasemap-2026-12-01/measure/observation.parquet'"
+```
+
+`--include 'measure/*'` downloads only some of the files. A [Hugging Face
+token](https://huggingface.co/settings/tokens) (`hf auth login`) raises the
+download rate limits.
+
+Don't query the archive in place with `hf://` paths. Hugging Face limits
+anonymous requests, one query can make hundreds, and repeated queries soon fail
+with HTTP 429. For in-place queries use `latest/` or a dated folder.
+
+## Cite Cancer Basemap
+
+Cite the release you used by its tag (e.g. `seandavis/cancerbasemap@2026-12-01`),
+and its DOI if the dataset page for that tag shows one. A tag is permanent
+even after its R2 folder ages out.
+
+If you used a dated folder, its date is the tag. Also record the `release` and
+`git_sha` from its `manifest.json`. Each table also names the upstream source
+and release it came from, and each source keeps its own terms; cite those
+sources as they ask (see [Sources](../sources.qmd)).
+
+## The manifest
+
+Every version has a `manifest.json`:
+
+```bash
+curl -s https://basemap.cancerdatasci.org/data/latest/manifest.json
+```
+
+DuckDB reads it directly. The provenance fields of the current `latest/`:
+
+```sql
+SELECT release, published_at, git_sha
+FROM read_json('https://basemap.cancerdatasci.org/data/latest/manifest.json');
+```
+
+And the row count of each published table:
+
+```sql
+SELECT t.schema, t."table", t.row_count
+FROM read_json('https://basemap.cancerdatasci.org/data/latest/manifest.json'),
+     unnest(tables) AS u(t)
+ORDER BY t.schema, t."table";
+```
+
+- `release` is the release date and `git_sha` the commit of the [pipeline code](https://github.com/seandavi/cancer-basemap) that built it.
+- `provenance` lists each upstream release the data was built from.
+- `tables` gives each table's `path`, `row_count`, `bytes`, `sha256`, comment and column docs.

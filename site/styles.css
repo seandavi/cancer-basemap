@@ -1,20 +1,9 @@
-/* Small deliberate stylesheet — readable measure, tables that scroll on
-   phones instead of breaking layout, light + dark via prefers-color-scheme
-   (Quarto's cosmo theme already ships a dark variant's color tokens; this
-   only adds what cosmo doesn't). */
-
-body {
-  max-width: 46rem;
-}
-
-.column-page, .column-screen {
-  max-width: 70rem;
-}
+/* What the archify theme (theme/*.scss) doesn't cover: tables that scroll on
+   phones instead of breaking layout, and the recipe/status widgets. */
 
 /* Every generated/queried table (dictionary, sources, recipe output) scrolls
    horizontally on a narrow screen instead of forcing the page to. */
-.cell-output table,
-table.table {
+.cell-output table {
   display: block;
   overflow-x: auto;
   white-space: nowrap;
@@ -33,10 +22,8 @@ table.table {
   font-weight: 600;
 }
 
-@media (prefers-color-scheme: dark) {
-  .status-error {
-    color: #ff8a80;
-  }
+.quarto-dark .status-error {
+  color: #ff8a80;
 }
 
 .suppressed-swatch {
@@ -54,3 +41,9 @@ table.table {
   padding: 0.25rem 1rem;
   margin: 1rem 0;
 }
+
+/* archify's footer links inherit the navbar colour; make them readable. */
+.nav-footer a { color: var(--ax-primary); }
+
+/* The docked sidebar's logo slot, empty here. */
+.sidebar-logo-link { display: none; }

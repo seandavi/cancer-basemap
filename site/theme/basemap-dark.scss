@@ -1,0 +1,35 @@
+/*-- scss:defaults --*/
+// Glacier and ember (ADR-0001 § The site): navy canvas (#0b1220), panel
+// (#111a2e), sky-400 primary (#38bdf8), orange-400 accent (#fb923c). Sky-700
+// fills carry white text; text in the primary colour uses sky-400 (>= 8:1).
+$body-bg: #0b1220;
+$body-color: #e2e8f0;
+$primary: #0369a1;
+$link-color: #38bdf8;
+$border-color: #1f2c47;
+$text-muted: #94a3b8;
+$navbar-bg: rgba(11, 18, 32, 0.9);
+$navbar-fg: #cbd5e1;
+// Not a distinct colour: with one shared sidebar Quarto marks the first
+// navbar item active on every page.
+$navbar-hl: #ffffff;
+$sidebar-bg: transparent;
+$footer-bg: transparent;
+$code-block-bg: #111a2e;
+$code-color: #7dd3fc;
+
+/*-- scss:rules --*/
+:root {
+  --ax-bg: #0b1220; --ax-panel: #111a2e; --ax-border: #1f2c47; --ax-grid-dot: rgba(56, 189, 248, 0.14);
+  --ax-text: #e2e8f0; --ax-muted: #94a3b8; --ax-faint: #94a3b8;
+  --ax-primary: #38bdf8; --ax-accent: #fb923c;
+  --ax-emerald: #34d399; --ax-amber: #fbbf24; --ax-rose: #fb7185; --ax-orange: #fb923c; --ax-slate: #94a3b8;
+  --ax-shadow: 0 1px 0 rgba(255, 255, 255, 0.02), 0 12px 32px rgba(0, 0, 0, 0.35);
+}
+// Bootstrap derives outline buttons from $primary / $secondary, unreadable here.
+.btn-outline-primary {
+  --bs-btn-color: #38bdf8; --bs-btn-border-color: #38bdf8;
+  --bs-btn-hover-color: #fff; --bs-btn-hover-bg: #0369a1; --bs-btn-hover-border-color: #0369a1;
+  --bs-btn-active-color: #fff; --bs-btn-active-bg: #075985; --bs-btn-active-border-color: #075985;
+}
+.btn-outline-secondary { --bs-btn-color: #cbd5e1; --bs-btn-border-color: #64748b; }
