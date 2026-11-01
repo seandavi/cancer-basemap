@@ -27,7 +27,7 @@ Created 2026-11-01. Nothing is published yet; the first release is #178.
 | Hugging Face dataset repo | [`seandavis/cancerbasemap`](https://huggingface.co/datasets/seandavis/cancerbasemap), public, empty | `HfApi.create_repo('seandavis/cancerbasemap', repo_type='dataset')` with `HF_TOKEN` from GSM `cdsci-huggingface-token` |
 | Worker, site and `/data/` | `data-cancerbasemap` on `basemap.cancerdatasci.org` | not yet: #175 (creates the custom domain on deploy) |
 | Analytics Engine dataset | `data_cancerbasemap_usage` | created by the Worker's first write (#175) |
-| Access logs | the account `http_requests` Logpush already covers `cancerdatasci.org` into `cdsci-cf-logs` | pre-existing (monode `apps/cloudflare_logs`); the Worker record is #177 |
+| Access logs | the account `http_requests` Logpush already covers `cancerdatasci.org` into `cdsci-cf-logs` | pre-existing (monode `apps/cloudflare_logs`). The Worker also `console.log`s one monode #67 access record (v1, raw `c_ip` included) per request, shipped by `logpush = true`; delivery needs a Workers-trace Logpush job for this script (monode #67), so read a row back from R2 after deploy (#177) |
 
 The catalog above keeps its `canceronice` names until it is retired (#183).
 
