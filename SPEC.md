@@ -549,7 +549,7 @@ of Colorado Cancer Center's catchment table with a provenance manifest naming
 every source release used.
 
 **E. Access.** A release bundle reads without credentials from DuckDB and
-DuckDB-WASM (`.read views.sql`, or `ATTACH` of `canceronice.duckdb` over HTTPS);
+DuckDB-WASM (`.read views.sql`, or `ATTACH` of `cancerbasemap.duckdb` over HTTPS);
 ECCO reads its data from the bundle instead of its own Parquet (ADR-0001).
 
 ---

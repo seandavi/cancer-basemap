@@ -1,4 +1,4 @@
-# 0001 — Public releases: monthly Parquet bundles, a year on R2, every one on Hugging Face
+# 0001 — Cancer Basemap public releases: monthly Parquet bundles, a year on R2, every one on Hugging Face
 
 **Status**: Accepted — owner decision, 2026-11-01.
 **Adopts**: biocOnIce [ADR-0014](https://github.com/seandavi/bioc-on-ice/blob/main/docs/adr/0014-public-releases-are-parquet-plus-duckdb-views.md)
@@ -45,7 +45,7 @@ records them.
 
 The public product is biocOnIce's bundle, unchanged in shape: dated, immutable
 `v{YYYY-MM-DD}/` folders plus `latest/`, each holding flat Parquet per table,
-`canceronice.duckdb`, `views.sql`, `restore.sql`, `manifest.json` and `gate.json`. Each
+`cancerbasemap.duckdb`, `views.sql`, `restore.sql`, `manifest.json` and `gate.json`. Each
 folder's views read that folder's own files. A release is dated by its UTC day; a
 finished dated folder is never overwritten, so a second release the same day waits for
 the next date. Parquet is the contract; the views are a DuckDB convenience.
@@ -80,7 +80,7 @@ month; the push comes before the upload; and the retention rule below.
 
 ### The gate
 
-`canceronice gate` checks each bundle against the previous published release, as
+`cancerbasemap gate` checks each bundle against the previous published release, as
 biocOnIce's does, and adds the hard gate this repo exists for: **in `measure.observation`,
 `value`, `lower`, `upper`, `numerator` and `denominator` are all NULL when
 `value_status != 'reported'`** (the column list of #162), checked on the Parquet users
@@ -123,7 +123,7 @@ tag `2026-12-01`. Tags are never deleted. If the tag exists and holds the same
 `manifest.json`, the push does nothing; if it holds a different one, the push fails. The push follows biocOnIce's `hf-push`:
 it refuses a bundle whose `gate.json` does not match its `manifest.json`, generates
 `views.sql`/`restore.sql` over download-relative paths and a dataset card from
-`manifest.json`, skips `canceronice.duckdb`, and is idempotent as above. Docs tell
+`manifest.json`, skips `cancerbasemap.duckdb`, and is idempotent as above. Docs tell
 users to download a tag, not to query `hf://` in place (HTTP 429).
 
 ### Retiring Iceberg
@@ -144,18 +144,34 @@ does. Then:
 
 ### Infrastructure of its own
 
-cancerOnIce gets its own serving infrastructure, parallel to biocOnIce's, in the same
-Cloudflare account (still acceptable only because nothing restricted lands, inherited
-ADR-0005):
+The public product is renamed **Cancer Basemap** before its first release. "cancerOnIce"
+read as frozen biospecimens and said nothing about geography; "Catchment Lake" collides
+with a hydrology term and no longer describes a product that is not a lake. A basemap is
+the common reference layer a map is drawn on, which is what this is under catchment
+dashboards such as Cancer InFocus. The Python package and CLI are `cancerbasemap`
+(`basemap` on PyPI is matplotlib's toolkit). The Iceberg-side names (`canceronice`
+bucket, `icegate-canceronice`, `canceronice-*` secrets) keep their names until they are
+retired.
+
+It gets its own serving infrastructure, parallel to biocOnIce's, in the same Cloudflare
+account (still acceptable only because nothing restricted lands, inherited ADR-0005):
 
 | Thing | Name |
 | --- | --- |
-| R2 bucket (public releases) | `data-canceronice` |
-| Worker (site at `/`, bucket at `/data/`) | `data-canceronice` |
-| Hosts | `canceronice.cancerdatasci.org`, and `data.canceronice.cancerdatasci.org` for the bundle views' hard-coded URLs (never redirected) |
-| Analytics Engine dataset | `data_canceronice_usage` |
-| Hugging Face dataset repo | `seandavis/canceronice` |
-| Secrets | GSM project `cdsci-infra`, prefix `canceronice-` |
+| R2 bucket (public releases) | `data-cancerbasemap`, created by monode OpenTofu like `data-bioconice` |
+| Worker (site at `/`, bucket at `/data/`) | `data-cancerbasemap` |
+| Site | `https://basemap.cancerdatasci.org/` |
+| Data | `https://basemap.cancerdatasci.org/data/` (`latest/`, `v{YYYY-MM-DD}/`) |
+| Analytics Engine dataset | `data_cancerbasemap_usage` |
+| Hugging Face dataset repo | `seandavis/cancerbasemap` |
+| Secrets | GSM project `cdsci-infra`, prefix `cancerbasemap-`; R2 writes use the existing account-scoped `cdsci-r2-*` credentials, as biocOnIce's do |
+
+One host, no separate data host (the zone does not use four-level names, and omicidx
+retired its separate data host for `/data/`). Because bundle views and every Hugging Face
+copy hard-code `/data/` URLs, two rules hold for good: **`/data/` belongs to the bucket**,
+so no page is ever routed under it; and **`/data/` serves bytes and never redirects**,
+since DuckDB range reads and DuckDB-Wasm `If-Match` requests depend on it. If the bytes
+ever move, the Worker keeps `/data/` as a pass-through.
 
 The release bucket is new, not the Iceberg bucket `canceronice`, so that the catalog can
 be deleted whole at retirement without touching a release. The Worker replaces the docs
@@ -163,11 +179,15 @@ Worker at `canceronice-docs.seandavi.workers.dev`.
 
 ### Logging
 
-- **Access**: every bucket request writes one Analytics Engine data point, as in both
-  siblings (object key, user agent, hashed IP, method, status, bytes, coarse location).
-  Analytics Engine keeps about three months, which is too short to judge a twelve-month
-  window, so a monthly job copies the dataset somewhere durable. Where is decided in its
-  issue (ClickHouse beside the job logs, or GCS/BigQuery as biocOnIce ADR-0010).
+- **Access** follows monode's standard for Worker sites (monode #67): R2 first,
+  ClickHouse as the place it all comes together. The account's `http_requests` Logpush
+  already ships every `cancerdatasci.org` request, Worker responses included, to the
+  private bucket `cdsci-cf-logs`, kept indefinitely; the Worker adds bioc-edge's
+  versioned `accessRecord` line per request with `logpush = true`, landing beside it; and
+  monode #108 loads both into ClickHouse. That record is the year of reads retention
+  decisions need. Each bucket request also writes an Analytics Engine data point, as in
+  both siblings, for quick download counts (it keeps about three months). Pages use the
+  shared GA4 property through Quarto's `google-analytics:`.
 - **Jobs**: the systemd `--user` units log to the journal, which vector already ships to
   ClickHouse (`systemd_user_jobs`, monode); failures alert through `ntfy-notify@`. Nothing
   new to build.
@@ -222,7 +242,7 @@ bundle needs no catalog support at all.
 
 - Acceptance E changes from anonymous Iceberg `ATTACH` to reading the bundle from DuckDB
   and DuckDB-WASM without credentials: `.read views.sql`, or `ATTACH` of
-  `canceronice.duckdb` over HTTPS. ECCO reads the bundle's Parquet.
+  `cancerbasemap.duckdb` over HTTPS. ECCO reads the bundle's Parquet.
 - The federation registry entry (#62) loses its basis, as biocOnIce ADR-0014 says of its
   own.
 - #19 (what the validity columns are called) stops mattering for public users once the
