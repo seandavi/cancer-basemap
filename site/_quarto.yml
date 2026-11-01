@@ -4,7 +4,7 @@ project:
 
 website:
   title: "Cancer Basemap"
-  site-url: https://canceronice-docs.seandavi.workers.dev
+  site-url: https://basemap.cancerdatasci.org
   page-footer:
     left: "Code: [MIT](https://github.com/seandavi/cancer-basemap/blob/main/LICENSE). Data: each source keeps its own terms — see [Sources](/sources.qmd)."
     # Bump this string by hand alongside catalog-release below whenever the

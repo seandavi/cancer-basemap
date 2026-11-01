@@ -48,9 +48,9 @@ and no `coi-docs` kernel still succeeds (this is what CI does; see below). A
 page whose source did change re-executes for real, against the live
 catalog, and needs the kernel above plus network access.
 
-The Home page's map data (`site/data/home_map.json`) is a build-time side
+The Home page's map data (`site/extracts/home_map.json`) is a build-time side
 effect, not a cached cell *output* — `freeze` doesn't reconstruct it the way
-it reconstructs a Dictionary table, so `data/home_map.json` is committed to
+it reconstructs a Dictionary table, so `extracts/home_map.json` is committed to
 the repo directly. Regenerate it (and the `_freeze/` entries for every page
 whose numbers it feeds) with a real network render whenever the underlying
 catalog changes meaningfully:
@@ -58,7 +58,7 @@ catalog changes meaningfully:
 ```sh
 rm -rf _freeze/index _freeze/dictionary _freeze/sources* _freeze/concepts _freeze/start
 quarto render .
-git add data/home_map.json _freeze
+git add extracts/home_map.json _freeze
 ```
 
 ## Preview
@@ -76,36 +76,23 @@ python3 -m http.server --directory _site 8000
 
 ## Deploy
 
-This ships as a Cloudflare Worker with **Workers Static Assets**
-(`assets.directory` pointing at `_site`), the same pattern
-[`explorer/README.md`](../explorer/README.md) uses and the same account and
-deploy credentials `docs/DEPLOY.md` uses for the gateway, as its own Worker
-(`canceronice-docs`) so a change here never risks the gateway or the
-explorer:
+The site ships through the `data-cancerbasemap` Worker in [`../worker/`](../worker/README.md),
+which serves `_site/` as Workers Static Assets at `https://basemap.cancerdatasci.org/`
+and the release bucket at `/data/`. Render, then deploy from there:
 
 ```sh
-cd site
 quarto render .
-export CLOUDFLARE_API_TOKEN=$(gcloud secrets versions access latest --secret cdsci-cloudflare-workers-token --project cdsci-infra)
-export CLOUDFLARE_ACCOUNT_ID=$(gcloud secrets versions access latest --secret cdsci-r2-account-id --project cdsci-infra)
-npx wrangler deploy
+cd ../worker && npm ci && npx wrangler deploy
 ```
 
-First deploy creates the Worker under the name in `wrangler.jsonc` (not yet
-added — see below) and serves it at
-`https://canceronice-docs.<account-subdomain>.workers.dev`. **Not deployed
-as part of #122** — the maintainer deploys; a custom domain and a CI deploy
-step are follow-up work.
-
-A `wrangler.jsonc` (`{"name": "canceronice-docs", "assets": {"directory": "./_site"}}`,
-mirroring `explorer/wrangler.jsonc`) still needs adding here before the
-command above works — deliberately left out of this PR since it isn't used
-until someone actually deploys.
+Nothing under `/data/` can be a page: that prefix belongs to the bucket
+(ADR-0001), which is why the Home map's extract lives in `extracts/`, not
+`data/`.
 
 ## CI
 
 `.github/workflows/ci.yml` runs `quarto render site` on every push/PR. It
-relies on the committed `_freeze/` cache and `data/home_map.json` above for
+relies on the committed `_freeze/` cache and `extracts/home_map.json` above for
 actual page content, so it needs no network access and no working
 `duckdb`/`cancerbasemap` install. It does, however, still need a *registered*
 `coi-docs` kernel — Quarto's Jupyter engine resolves a kernel by name before
