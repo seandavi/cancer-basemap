@@ -1,0 +1,244 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$comment": "DERIVED, not monode's: monode #67 holds no JSON Schema yet (checked 2026-11-01). Derived from bioc-edge worker/src/keys.ts accessRecord(), v=1. Replace with monode's file when it lands.",
+  "title": "access record v1",
+  "type": "object",
+  "properties": {
+    "type": {
+      "const": "access"
+    },
+    "v": {
+      "const": 1
+    },
+    "ts": {
+      "type": "integer"
+    },
+    "x_edge_location": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "sc_bytes": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "c_ip": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "cs_method": {
+      "type": "string"
+    },
+    "cs_host": {
+      "type": "string"
+    },
+    "cs_uri_stem": {
+      "type": "string"
+    },
+    "sc_status": {
+      "type": "integer"
+    },
+    "cs_referer": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "cs_user_agent": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "cs_uri_query": {
+      "type": "string"
+    },
+    "cs_cookie": {
+      "type": "null"
+    },
+    "x_edge_result_type": {
+      "type": "string"
+    },
+    "x_edge_request_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "x_host_header": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "cs_protocol": {
+      "type": "string"
+    },
+    "cs_bytes": {
+      "type": "null"
+    },
+    "time_taken": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "x_forwarded_for": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "ssl_protocol": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "ssl_cipher": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "x_edge_response_result_type": {
+      "type": "string"
+    },
+    "cs_protocol_version": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "fle_status": {
+      "type": "null"
+    },
+    "fle_encrypted_fields": {
+      "type": "null"
+    },
+    "c_port": {
+      "type": "null"
+    },
+    "time_to_first_byte": {
+      "type": "null"
+    },
+    "x_edge_detailed_result_type": {
+      "type": "string"
+    },
+    "sc_content_type": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "sc_content_len": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "sc_range_start": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "sc_range_end": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "cf_country": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "cf_continent": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "cf_asn": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "cf_as_organization": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "cf_client_tcp_rtt": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "cf_client_accept_encoding": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "cf": {
+      "type": [
+        "object",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "type",
+    "v",
+    "ts",
+    "x_edge_location",
+    "sc_bytes",
+    "c_ip",
+    "cs_method",
+    "cs_host",
+    "cs_uri_stem",
+    "sc_status",
+    "cs_referer",
+    "cs_user_agent",
+    "cs_uri_query",
+    "cs_cookie",
+    "x_edge_result_type",
+    "x_edge_request_id",
+    "x_host_header",
+    "cs_protocol",
+    "cs_bytes",
+    "time_taken",
+    "x_forwarded_for",
+    "ssl_protocol",
+    "ssl_cipher",
+    "x_edge_response_result_type",
+    "cs_protocol_version",
+    "fle_status",
+    "fle_encrypted_fields",
+    "c_port",
+    "time_to_first_byte",
+    "x_edge_detailed_result_type",
+    "sc_content_type",
+    "sc_content_len",
+    "sc_range_start",
+    "sc_range_end",
+    "cf_country",
+    "cf_continent",
+    "cf_asn",
+    "cf_as_organization",
+    "cf_client_tcp_rtt",
+    "cf_client_accept_encoding",
+    "cf"
+  ],
+  "additionalProperties": false
+}

@@ -1,3 +1,4 @@
+import { accessRecord } from "./access.ts";
 import { logUsage } from "./analytics.ts";
 import { conditionalHeaders, failedConditionStatus } from "./conditional.ts";
 import { listDirectory } from "./listing.ts";
@@ -28,7 +29,7 @@ const CORS_HEADERS = {
     "Content-Length, Content-Range, Accept-Ranges, ETag",
 };
 
-export default {
+const handler = {
   async fetch(
     request: Request,
     env: Env,
@@ -149,5 +150,30 @@ export default {
       status,
       headers,
     });
+  },
+} satisfies ExportedHandler<Env>;
+
+/**
+ * One monode #67 access record per request, pages and /data/, every method and
+ * status (a throw logs as 500), as one console.log line that Logpush ships.
+ * The Analytics Engine point in the handler is separate and stays.
+ */
+export default {
+  async fetch(
+    request: Request,
+    env: Env,
+    ctx: ExecutionContext,
+  ): Promise<Response> {
+    const t0 = Date.now();
+    let response: Response;
+    try {
+      response = await handler.fetch(request, env, ctx);
+    } catch (err) {
+      console.log(JSON.stringify(accessRecord(request, 500, "ERROR", null, t0)));
+      throw err;
+    }
+    const cacheStatus = response.headers.has("location") ? "REDIRECT" : "MISS";
+    console.log(JSON.stringify(accessRecord(request, response.status, cacheStatus, response, t0)));
+    return response;
   },
 } satisfies ExportedHandler<Env>;
