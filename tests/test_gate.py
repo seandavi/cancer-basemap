@@ -70,6 +70,9 @@ def candidate(tmp_path, **tables):
 
 def test_clean_bundle_passes_and_gate_json_binds_the_manifest(tmp_path, reference, monkeypatch, capsys):
     bundle = candidate(tmp_path)
+    readme = tmp_path / "README.md"
+    readme.write_text("```sql\nSELECT 1\n```\n")
+    monkeypatch.setattr(gate, "README", readme)
     assert _run(monkeypatch, str(bundle), "--reference", reference.as_uri()) == 0
     out = capsys.readouterr().out
     assert out.startswith(f"release 2026-11-01 against {reference.as_uri()} (release 2026-10-01)\n")

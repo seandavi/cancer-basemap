@@ -13,10 +13,10 @@ website:
   search: true
   page-footer:
     left: "Code: [MIT](https://github.com/seandavi/cancer-basemap/blob/main/LICENSE). Data: each source keeps its own terms — see [Sources](/sources.qmd)."
-    # Bump this string by hand alongside catalog-release below whenever the
-    # site's build-time extracts (home map, dictionary, sources, recipes) are
-    # refreshed against a new catalog release — there is no automated check.
-    right: "Built against catalog release 2026.09."
+    # Bump this string by hand whenever the site's build-time extracts (home
+    # map, dictionary, concepts, start pages) are refreshed against a new
+    # release — there is no automated check.
+    right: "Built against release 2026-11-02."
   navbar:
     left:
       - text: Start here
@@ -107,7 +107,7 @@ format:
 # and only re-executes pages that did change (and only if the runner has
 # network + the venv/kernel available). Practical effect here: commit
 # _freeze/ alongside the source so `quarto render` in CI doesn't require
-# hitting the live catalog, while a local `quarto render --execute-daemon
+# hitting the live release, while a local `quarto render --execute-daemon
 # restart` (or touching a .qmd with a code chunk) still re-runs the real
 # queries. See site/README.md for the local render setup.
 execute:

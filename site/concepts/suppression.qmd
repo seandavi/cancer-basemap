@@ -26,23 +26,18 @@ The invariant: **`value` is `NULL` whenever `value_status` is not
 average a suppressed cell in as a zero, because there's no number there to
 average.
 
-## Verified against the live catalog
+## Verified against the release
 
 ```{python}
 #| echo: false
 import duckdb
 
 con = duckdb.connect()
-con.execute("INSTALL iceberg; LOAD iceberg; INSTALL httpfs; LOAD httpfs;")
-con.execute(
-    "ATTACH 'canceronice' AS coi (TYPE ICEBERG, "
-    "ENDPOINT 'https://icegate-canceronice.seandavi.workers.dev', "
-    "AUTHORIZATION_TYPE 'none');"
-)
-zero_leaks = con.sql("""
-    SELECT count(*) FROM coi.measure.observation
-    WHERE value_status != 'reported' AND value IS NOT NULL AND valid_to IS NULL
-""").fetchone()[0]
+con.execute("ATTACH 'https://basemap.cancerdatasci.org/data/latest/cancerbasemap.duckdb' AS cbm (READ_ONLY)")
+zero_leaks = con.execute("""
+    SELECT count(*) FROM cbm.measure.observation
+    WHERE value_status != 'reported' AND value IS NOT NULL
+""").fetchall()[0][0]
 print(f"Rows where value_status != 'reported' but value is not NULL: {zero_leaks}")
 ```
 
@@ -52,8 +47,7 @@ Real counts by source, as of this render:
 #| echo: false
 con.sql("""
     SELECT source, value_status, count(*) AS n
-    FROM coi.measure.observation
-    WHERE valid_to IS NULL
+    FROM cbm.measure.observation
     GROUP BY 1, 2
     ORDER BY 1, 2
 """).df()

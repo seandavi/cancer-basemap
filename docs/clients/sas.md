@@ -1,7 +1,8 @@
 ## SAS
 
-**NOT YET RUN IN SAS.** SAS has no Iceberg engine, so every route puts
-DuckDB on one side of a boundary SAS never crosses. In order of how little
+**NOT YET RUN IN SAS.** SAS cannot read a release's DuckDB views or
+Parquet over HTTPS itself, so every route puts DuckDB on one side of a
+boundary SAS never crosses. In order of how little
 they assume about your SAS environment:
 
 1. **DuckDB CLI &rarr; CSV/Parquet &rarr; `PROC IMPORT`** (or the Parquet
@@ -19,11 +20,10 @@ they assume about your SAS environment:
    hand a pandas DataFrame back to SAS. Not tested here — Viya is not
    available on this build host.
 3. **SAS/ACCESS to ODBC + the DuckDB ODBC driver.** DuckDB ships an ODBC
-   driver; SAS/ACCESS Interface to ODBC can then treat `coi.*` tables like
+   driver; SAS/ACCESS Interface to ODBC can then treat `cbm.*` tables like
    any ODBC source. The caveat: an `ATTACH` is a live-session command, not
-   something stored in a DuckDB database file, so it has to be issued on
-   **every** ODBC connection SAS opens — there is no DuckDB database file
-   to attach it into once and reuse. Checked DuckDB's own ODBC docs
+   something stored in a DuckDB database file you open, so it has to be issued on
+   **every** ODBC connection SAS opens. Checked DuckDB's own ODBC docs
    ([ODBC Configuration](https://duckdb.org/docs/lts/clients/odbc/configuration),
    [ODBC 101 guide](https://duckdb.org/docs/current/guides/odbc/general))
    for a documented way to run init SQL automatically per connection (an
@@ -33,25 +33,25 @@ they assume about your SAS environment:
    explicitly as the first statement of every SAS/ACCESS session (e.g. a
    `PROC SQL` pass-through `CONNECT` block that issues it before any query),
    or pointing `Database` at a local DuckDB file that already has
-   `ATTACH ... AS coi` baked in via a `.duckdbrc`-style init script your site
+   `ATTACH ... AS cbm` baked in via a `.duckdbrc`-style init script your site
    controls — neither of which this project has built or tested.
 
 See [`sas/cancerbasemap.sas`](../../sas/cancerbasemap.sas) for the macro
-implementing route 1, with a "NOT YET RUN IN SAS" banner and a checklist for
+implementing route 1 (`release=` defaults to `latest`; `release=v2026-11-02`
+pins a dated release), with a "NOT YET RUN IN SAS" banner and a checklist for
 whoever can run SAS. What **was** verified on the DuckDB side of the
 boundary:
 
 ```
 $ duckdb --version
-v2.1.0-alpha40519 (Unknown Version) 154c2c8d5f
+v2.0.0-alpha43763 (Cyanoptera) 96063b9e39
 
 $ duckdb -csv -nullvalue '' -c "
-INSTALL iceberg; LOAD iceberg;
-ATTACH 'canceronice' AS coi (TYPE ICEBERG, URI 'https://icegate-canceronice.seandavi.workers.dev', AUTHORIZATION_TYPE 'none');
+ATTACH 'https://basemap.cancerdatasci.org/data/latest/cancerbasemap.duckdb' AS cbm (READ_ONLY);
 SELECT geo_id, source, source_release, measure_id, value, lower, upper, value_status
-FROM coi.measure.observation
+FROM cbm.measure.observation
 WHERE source = 'PLACES' AND measure_id = 'PLACES:MAMMOUSE:age_adjusted'
-  AND source_release = '2025' AND valid_to IS NULL
+  AND source_release = '2025'
   AND geo_id IN ('county:08031','county:08001','county:48301')
 ORDER BY geo_id;
 "

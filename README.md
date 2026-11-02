@@ -2,11 +2,13 @@
 
 Population cancer data — incidence, mortality, screening, risk factors, social
 and environmental context, and the places people get care — published as
-Apache Iceberg tables keyed on geography and time, where **every release every
-source ever published stays queryable**.
+monthly releases of Parquet files plus DuckDB views, keyed on geography and
+time, where every release every source published stays queryable
+(`source_release` is a column). Every Cancer Basemap release stays on
+[Hugging Face](https://huggingface.co/datasets/seandavis/cancerbasemap).
 
-Sibling of [biocOnIce](https://github.com/seandavi/bioc-on-ice), served through
-[icegate](https://github.com/seandavi/icegate). Public aggregates only.
+Sibling of [biocOnIce](https://github.com/seandavi/bioc-on-ice). Public
+aggregates only. Site: <https://basemap.cancerdatasci.org/>.
 
 - **[SPEC.md](SPEC.md)** — what the system must do (design source of truth)
 - **[AGENTS.md](AGENTS.md)** — working rules for agents and humans
@@ -16,50 +18,60 @@ Sibling of [biocOnIce](https://github.com/seandavi/bioc-on-ice), served through
 
 ## Query it
 
-No account, no token. From DuckDB:
+No account, no token. A release is a folder of Parquet files plus a DuckDB
+database of views over them, served over HTTPS:
+
+- `https://basemap.cancerdatasci.org/data/latest/` — the newest release
+- `https://basemap.cancerdatasci.org/data/v2026-11-02/` — a dated release that never
+  changes. R2 keeps the newest release of each of the last 12 months.
+- Hugging Face `seandavis/cancerbasemap`, tag `2026-11-02` — every release,
+  permanently. Cite the tag, e.g. `seandavis/cancerbasemap@2026-11-02`.
+
+From DuckDB, attach the release database (read-only), or read `views.sql`
+into a session. Pin a dated folder for anything you will rerun:
 
 ```sql
-INSTALL iceberg; LOAD iceberg;
-ATTACH 'canceronice' AS coi (
-    TYPE ICEBERG,
-    URI 'https://icegate-canceronice.seandavi.workers.dev',  -- DuckDB <= 1.5: ENDPOINT instead of URI
-    AUTHORIZATION_TYPE 'none'
-);
+ATTACH 'https://basemap.cancerdatasci.org/data/latest/cancerbasemap.duckdb' AS cbm (READ_ONLY);
+USE cbm;
+-- or: .read https://basemap.cancerdatasci.org/data/latest/views.sql
+-- pinned: .../data/v2026-11-02/cancerbasemap.duckdb
 ```
 
 Mammography screening in Colorado counties, lowest first, with the interval,
 the release that said so, and the county's rurality code:
 
-```sql
+```sql bundle
 SELECT u.name, o.source_release, o.value AS pct, o.lower, o.upper, o.value_status,
        r.value AS rucc_code
-FROM coi.measure.observation o
-JOIN coi.geography.unit u
-  ON u.geo_id = o.geo_id AND u.vintage = 2026 AND u.valid_to IS NULL
-LEFT JOIN coi.measure.observation r
-  ON r.geo_id = o.geo_id AND r.source = 'RUCC' AND r.valid_to IS NULL
+FROM measure.observation o
+JOIN geography.unit u
+  ON u.geo_id = o.geo_id AND u.vintage = 2026
+LEFT JOIN measure.observation r
+  ON r.geo_id = o.geo_id AND r.source = 'RUCC'
 WHERE o.source = 'PLACES' AND o.measure_id = 'PLACES:MAMMOUSE:age_adjusted'
   AND o.source_release = '2025' AND u.parent_geo_id = 'state:08'
-  AND o.valid_to IS NULL
 ORDER BY pct LIMIT 10;
 ```
 
 `value` is NULL whenever `value_status` is not `reported` — a suppressed cell
 never reads as a number. The geography join names a vintage explicitly because
-`geo_vintage` assignment is still being settled (#21).
+`geo_vintage` assignment is still being settled (#21). A bundle holds the
+current rows only: it has no validity columns, so there is no `valid_to` to
+filter on.
+
+From Python, fetch with `duckdb`, `requests` or `polars`: Python's default
+`urllib` user agent is blocked by the zone (HTTP 403, Cloudflare error 1010).
 
 Working from R, SAS or SEER\*Stat instead of raw SQL? See
-[docs/CLIENTS.md](docs/CLIENTS.md).
+[docs/CLIENTS.md](docs/CLIENTS.md). Why releases look like this:
+[ADR-0001](docs/adr/0001-public-releases-monthly-parquet-bundles.md).
 
 ## Status
 
-Bootstrap catalog live since 2026-09-18, first loaded as catalog release
-`2026.09`: `geography.unit` (Census Gazetteer vintages 2010, 2020, 2026 —
-254,616 rows), and `measure.observation` from CDC PLACES county releases 2024
-and 2025 (470,184 rows) and USDA ERS Rural-Urban Continuum Codes 2023 (3,235
-rows). The versioning model is not settled; expect these tables to be rebuilt.
-Work is sequenced by milestone tracking issues — see the
-[milestones](../../milestones).
+First release `2026-11-02`: 59 tables, 78,550,648 rows (counted from its
+`manifest.json`), including `measure.observation` (29,557,502 rows) and
+`geography.unit` (582,392). Work is sequenced by milestone tracking issues —
+see the [milestones](../../milestones).
 
 ## Develop
 

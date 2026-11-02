@@ -10,9 +10,8 @@ binary itself — no Python, no R, no account.
 
 ```sh
 duckdb -c "
-INSTALL iceberg; LOAD iceberg;
-ATTACH 'canceronice' AS coi (TYPE ICEBERG, ENDPOINT 'https://icegate-canceronice.seandavi.workers.dev', AUTHORIZATION_TYPE 'none');
-SELECT source, count(*) FROM coi.measure.observation WHERE valid_to IS NULL GROUP BY source ORDER BY source;
+ATTACH 'https://basemap.cancerdatasci.org/data/latest/cancerbasemap.duckdb' AS cbm (READ_ONLY);
+SELECT source, count(*) AS rows FROM cbm.measure.observation GROUP BY source ORDER BY source;
 "
 ```
 
@@ -24,20 +23,29 @@ actual `duckdb` binary, not typed in by hand:
 import subprocess
 
 sql = """
-INSTALL iceberg; LOAD iceberg;
-ATTACH 'canceronice' AS coi (TYPE ICEBERG, URI 'https://icegate-canceronice.seandavi.workers.dev', AUTHORIZATION_TYPE 'none');
-SELECT source, count(*) AS rows FROM coi.measure.observation WHERE valid_to IS NULL GROUP BY source ORDER BY source;
+ATTACH 'https://basemap.cancerdatasci.org/data/latest/cancerbasemap.duckdb' AS cbm (READ_ONLY);
+SELECT source, count(*) AS rows FROM cbm.measure.observation GROUP BY source ORDER BY source;
 """
 result = subprocess.run(["duckdb", "-c", sql], capture_output=True, text=True, check=True)
 print(result.stdout)
 ```
 
-Drop `-c "..."` for an interactive shell (`duckdb`), then paste the `INSTALL`/
-`ATTACH` block once per session and query freely — `coi` stays attached for
-the rest of that shell.
+Drop `-c "..."` for an interactive shell (`duckdb`), then paste the `ATTACH`
+once per session and query freely — `cbm` stays attached for the rest of that
+shell. Replace `latest` with a dated folder such as `v2026-11-02` to pin a
+release.
 
 Piping to a file works the same as any other DuckDB output:
 
 ```sh
-duckdb -c "ATTACH 'canceronice' AS coi (...); COPY (SELECT * FROM coi.measure.definition) TO 'measures.csv';"
+duckdb -c "ATTACH 'https://basemap.cancerdatasci.org/data/latest/cancerbasemap.duckdb' AS cbm (READ_ONLY); COPY (SELECT * FROM cbm.measure.definition) TO 'measures.csv';"
+```
+
+Every release also ships a `views.sql` (the same views, created in your own
+session) and plain Parquet files. `.read` cannot open a URL, so download it
+first:
+
+```sh
+curl -sO https://basemap.cancerdatasci.org/data/latest/views.sql
+duckdb -c ".read views.sql" -c "SELECT count(*) FROM geography.unit"
 ```

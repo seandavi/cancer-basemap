@@ -6,13 +6,16 @@ No new dependency: `duckdb` (already this project's own dependency,
 ```python
 import duckdb
 con = duckdb.connect()
-con.sql("INSTALL iceberg; LOAD iceberg; "
-        "ATTACH 'canceronice' AS coi (TYPE ICEBERG, ENDPOINT 'https://icegate-canceronice.seandavi.workers.dev', AUTHORIZATION_TYPE 'none');")
+con.execute("ATTACH 'https://basemap.cancerdatasci.org/data/latest/cancerbasemap.duckdb' AS cbm (READ_ONLY)")
+con.sql("SELECT count(*) FROM cbm.geography.unit").fetchall()
 ```
 
-Run here with this project's own pinned `duckdb` (`1.5.5`, from
-`uv run python`): `ENDPOINT` is required, not `URI` — that version's
-Iceberg extension raised `_duckdb.Error: Unhandled options found: uri`
-until swapped for `ENDPOINT`, confirming the README's own "DuckDB &le; 1.5
-needs `ENDPOINT`" note. See [duckdb-cli.md](duckdb-cli.md) for the same
-comparison against a newer CLI build.
+Fetch with `duckdb`, `requests` or `polars` (`pl.scan_parquet(url)` works on
+any file in a release). Python's default `urllib` user agent is blocked by the
+zone: HTTP 403, Cloudflare error 1010.
+
+Pin a dated folder (`.../data/v2026-11-02/cancerbasemap.duckdb`) for anything
+you will rerun, and cite the Hugging Face tag (`seandavis/cancerbasemap@2026-11-02`).
+Run here with this project's own pinned `duckdb` (`1.5.5`, from `uv run
+python`) against the `2026-11-02` release. See [duckdb-cli.md](duckdb-cli.md)
+for the CLI form and the `views.sql` route.

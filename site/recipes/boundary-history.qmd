@@ -2,7 +2,7 @@
 title: "A county's boundary history"
 ---
 
-A state's county-level geography across every Gazetteer vintage the catalog
+A state's county-level geography across every Gazetteer vintage the release
 carries — run live. Connecticut (the default) is the clearest example: eight
 legacy counties through 2020, replaced by nine planning regions in 2022 (see
 [Concepts › Boundary vintages](/concepts/boundaries.qmd)).
@@ -21,8 +21,8 @@ viewof stateChoice = Inputs.select(US_STATES, {
 ```{ojs}
 //| echo: false
 sql = `SELECT vintage, geo_id, name, round(aland_m2 / 1e6, 1) AS land_km2
-FROM coi.geography.unit
-WHERE level = 'county' AND parent_geo_id = 'state:${stateChoice.fips}' AND valid_to IS NULL
+FROM cbm.geography.unit
+WHERE level = 'county' AND parent_geo_id = 'state:${stateChoice.fips}'
 ORDER BY vintage, geo_id`
 ```
 

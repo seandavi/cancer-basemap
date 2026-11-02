@@ -3,14 +3,15 @@ title: "Three time axes"
 jupyter: coi-docs
 ---
 
-Every measure in the lake carries three distinct notions of "when," and
-conflating them is the characteristic error in this domain.
+Every measure carries two notions of "when" in its columns, and the release
+you attached is a third. Conflating them is the characteristic error in this
+domain.
 
 | Axis | Column(s) | Meaning |
 | --- | --- | --- |
 | **Period** | `period_start`, `period_end` | the time the estimate *describes* |
 | **Source release** | `source_release` | the upstream edition that *published* it |
-| **Catalog validity** | `valid_from`, `valid_to` | when Cancer Basemap first/last carried this version of the row |
+| **Cancer Basemap release** | the folder you attach (`v2026-11-02/`, or `latest/`) | which monthly bundle you are reading |
 
 ## A real example: PLACES 2024 vs. 2025
 
@@ -19,15 +20,10 @@ conflating them is the characteristic error in this domain.
 import duckdb
 
 con = duckdb.connect()
-con.execute("INSTALL iceberg; LOAD iceberg; INSTALL httpfs; LOAD httpfs;")
-con.execute(
-    "ATTACH 'canceronice' AS coi (TYPE ICEBERG, "
-    "ENDPOINT 'https://icegate-canceronice.seandavi.workers.dev', "
-    "AUTHORIZATION_TYPE 'none');"
-)
+con.execute("ATTACH 'https://basemap.cancerdatasci.org/data/latest/cancerbasemap.duckdb' AS cbm (READ_ONLY)")
 con.sql("""
-    SELECT source_release, period_start, period_end, value, valid_from, valid_to
-    FROM coi.measure.observation
+    SELECT source_release, period_start, period_end, value
+    FROM cbm.measure.observation
     WHERE source = 'PLACES' AND measure_id = 'PLACES:CANCER:age_adjusted'
       AND geo_id = 'county:08031'
     ORDER BY source_release
@@ -41,13 +37,13 @@ release actually describes is one year *earlier*: the 2024 release models
 `source_release = '2025'` expecting "2025 data" is filtering on the release
 label, not the period — the value it gets describes 2023.
 
-`valid_from` is `'2026.09'` on both rows and `valid_to` is `NULL` on both:
-this is a bootstrap catalog, so every row so far carries the same catalog
-release. The catalog-validity axis becomes visible starting at the next
-catalog release that changes or retires a row — at that point `valid_to`
-stops being `NULL` on the superseded version, and a query for "what the lake
-said as of release 2026.09" becomes a real, answerable filter rather than a
-trivial one.
+Both source releases are in every Cancer Basemap release, because
+`source_release` is a column, not a folder. The **Cancer Basemap release** is
+the third axis: a bundle holds the current rows only, so if a source corrects
+a value within one `source_release`, the corrected row replaces the old one in
+the next bundle. The earlier value stays in the earlier release, which is why a
+dated folder, or its Hugging Face tag, is how you reproduce an analysis (see
+[Versions and citation](/guides/versions-and-citation.qmd)).
 
 ## A second example: an edition's own period moves
 
@@ -58,7 +54,7 @@ a five-year ACS window that moves with it — never the edition year alone:
 #| echo: false
 con.sql("""
     SELECT source_release AS edition, min(period_start) AS period_start, max(period_end) AS period_end
-    FROM coi.measure.observation
+    FROM cbm.measure.observation
     WHERE source = 'SVI'
     GROUP BY 1 ORDER BY 1
 """).df()
@@ -74,6 +70,6 @@ by source S in release R, the measure was X"* — names the release, not the
 period, on purpose: the release is what you can point back to when someone
 asks "where did this number come from." Reproducing a past analysis means
 filtering on `source_release`, not on `period_start`/`period_end` (a later
-release can restate an earlier period with revised numbers) and not on
-`valid_from`/`valid_to` (which tracks the lake's own history, not the
-source's).
+release can restate an earlier period with revised numbers), and pinning the
+Cancer Basemap release you attached, since a bundle's rows can change between
+releases.

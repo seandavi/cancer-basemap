@@ -10,11 +10,14 @@ jupyter: coi-docs
 
 Cancer Basemap publishes population cancer data — screening, risk factors,
 the social and environmental context around them, and the places people get
-care — as Apache Iceberg tables keyed on geography and time. Every release
-every source has ever published stays queryable, from DuckDB, R, Python, or
-a browser, with no account and no token.
+care — as monthly releases: Parquet files plus DuckDB views, keyed on
+geography and time. Every release every source has ever published stays
+queryable, from DuckDB, R, Python, or a browser, with no account and no
+token. Each release stays on R2 for a year, and every release is kept on
+[Hugging Face](https://huggingface.co/datasets/seandavis/cancerbasemap) under
+a tag you can cite.
 
-The lake exists so a cancer center can write, and defend, one sentence: *in
+Cancer Basemap exists so a cancer center can write, and defend, one sentence: *in
 our catchment, as reported by source S in release R, the measure was X.*
 Today that sentence usually rests on a screenshot, a downloaded CSV of
 unknown vintage, or a dashboard that has since silently changed underneath
@@ -23,10 +26,10 @@ it. Here, the release that produced a number stays attached to it.
 ## Live county map
 
 The map below reads a small, versioned extract of `measure.observation`
-written at *build* time — the same numbers you'd get querying the catalog
+written at *build* time — the same numbers you'd get querying the release
 directly, just not re-queried on every page load. ["Run this live in your
 browser"](recipes/screening-rurality.qmd) runs the same measure/release
-query against the real, 25-million-row table through DuckDB-WASM — scoped to
+query against the real, 29.6-million-row table through DuckDB-WASM — scoped to
 one state at a time rather than the whole country, for the reason given on
 that page.
 
@@ -35,19 +38,14 @@ that page.
 #| output: false
 # Build-time extract: ~6 cancer-relevant PLACES county measures, releases
 # 2024 and 2025, written to extracts/home_map.json for the {ojs} map below to
-# read. This is real catalog output, not a fixture — if a release changes
+# read. This is real release output, not a fixture — if a release changes
 # these numbers, the next render of this page changes too.
 import json
 
 import duckdb
 
 con = duckdb.connect()
-con.execute("INSTALL iceberg; LOAD iceberg; INSTALL httpfs; LOAD httpfs;")
-con.execute(
-    "ATTACH 'canceronice' AS coi (TYPE ICEBERG, "
-    "ENDPOINT 'https://icegate-canceronice.seandavi.workers.dev', "
-    "AUTHORIZATION_TYPE 'none');"
-)
+con.execute("ATTACH 'https://basemap.cancerdatasci.org/data/latest/cancerbasemap.duckdb' AS cbm (READ_ONLY)")
 
 MEASURES = [
     "PLACES:CANCER:age_adjusted",
@@ -73,11 +71,11 @@ STATUS_CODE = {
 placeholders = ",".join(f"'{m}'" for m in MEASURES)
 rows = con.sql(f"""
     SELECT source_release, measure_id, geo_id, value, lower, upper, value_status
-    FROM coi.measure.observation
+    FROM cbm.measure.observation
     WHERE source = 'PLACES' AND source_release IN ('2024', '2025')
       AND measure_id IN ({placeholders})
       AND geo_id LIKE 'county:%' AND stratum_id = 'PLACES:ALL'
-      AND valid_to IS NULL
+     
 """).fetchall()
 
 obs = {}
@@ -92,13 +90,13 @@ for release, measure_id, geo_id, value, lower, upper, status in rows:
     ])
 
 labels = dict(con.sql(f"""
-    SELECT measure_id, label FROM coi.measure.definition
+    SELECT measure_id, label FROM cbm.measure.definition
     WHERE measure_id IN ({placeholders})
 """).fetchall())
 
 counties = dict(con.sql("""
-    SELECT fips, name FROM coi.geography.unit
-    WHERE level = 'county' AND vintage = 2026 AND valid_to IS NULL
+    SELECT fips, name FROM cbm.geography.unit
+    WHERE level = 'county' AND vintage = 2026
 """).fetchall())
 
 payload = {
@@ -173,7 +171,7 @@ byFips = new Map(rowsForSelection.map((r) => [r[0], r]))
 
 ```{ojs}
 //| echo: false
-// County boundaries live nowhere in the lake (it holds tabular data, not
+// County boundaries live nowhere in a release (it holds tabular data, not
 // geometry) — loaded once, at view time, from a public TopoJSON CDN.
 countyGeo = {
   const topojsonMod = await import("https://cdn.jsdelivr.net/npm/topojson-client@3/+esm");
@@ -238,12 +236,12 @@ Plot.plot({
   your browser, and [Versions and citation](guides/versions-and-citation.qmd)
   says which version to pin and cite.
 - **New here?** [Start here](start/index.qmd) has the exact ATTACH statement
-  for R, SAS, SEER\*Stat, Python, and the DuckDB CLI.
+  and the way in for R, SAS, SEER\*Stat, Python, and the DuckDB CLI.
 - **Building a catchment report?** [Concepts](concepts/index.qmd) covers the
   three time axes, why suppression is a status rather than a blank cell, and
   boundary vintages — the things that make a query wrong in a way that still
   runs.
 - **Looking for a specific measure or table?** The [Dictionary](dictionary/index.qmd)
-  is generated straight from the catalog and the declared schemas, regenerated
+  is generated straight from the release and the declared schemas, regenerated
   at each site build — not hand-maintained, though (like this page's map)
   it's a snapshot as of that build, not a live query.

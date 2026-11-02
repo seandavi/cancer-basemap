@@ -2,30 +2,33 @@
 title: "Start here"
 ---
 
-Cancer Basemap is read anonymously — no account, no token — through
-[DuckDB's Iceberg extension](https://duckdb.org/docs/extensions/iceberg.html).
-Every client below speaks that same SQL underneath; pick the one you already
-use.
+Cancer Basemap is read anonymously — no account, no token. A release is a
+folder of Parquet files plus `cancerbasemap.duckdb`, a DuckDB database of
+views over them, served over HTTPS. Every client below speaks the same SQL
+underneath; pick the one you already use.
 
 ## The one statement every client needs
 
 ```sql
-INSTALL iceberg; LOAD iceberg;
-ATTACH 'canceronice' AS coi (
-    TYPE ICEBERG,
-    URI 'https://icegate-canceronice.seandavi.workers.dev',  -- DuckDB <= 1.5: ENDPOINT instead of URI
-    AUTHORIZATION_TYPE 'none'
-);
+ATTACH 'https://basemap.cancerdatasci.org/data/latest/cancerbasemap.duckdb' AS cbm (READ_ONLY);
+USE cbm;
 ```
 
-DuckDB versions through 1.5 (and the pinned build the in-browser recipes use)
-only accept `ENDPOINT`; newer native builds warn that `ENDPOINT` is
-deprecated and prefer `URI`. Use whichever your DuckDB version asks for — the
-value is the same either way.
+Once attached, every table is `cbm.<namespace>.<table>` — `cbm.measure.observation`,
+`cbm.geography.unit`, and so on (plain `measure.observation` after `USE cbm`).
+See the [Dictionary](/dictionary/index.qmd) for the full table and column
+list. Each release also holds a `views.sql` that creates the same views in your
+own session, and every table as a plain Parquet file (`measure/observation.parquet`)
+that any engine can read.
 
-Once attached, every table is `coi.<namespace>.<table>` — `coi.measure.observation`,
-`coi.geography.unit`, and so on. See the [Dictionary](/dictionary/index.qmd)
-for the full table and column list.
+`latest/` moves each month. For anything you will rerun, replace `latest` with
+a dated folder such as `v2026-11-02`, and cite the Hugging Face tag
+(`seandavis/cancerbasemap@2026-11-02`) — see
+[Versions and citation](/guides/versions-and-citation.qmd). A release holds
+current rows only, so there is no `valid_to` to filter on.
+
+Python's default `urllib` user agent is blocked by the zone (HTTP 403,
+Cloudflare error 1010): fetch with `duckdb`, `requests` or `polars`.
 
 ## Pick your client
 

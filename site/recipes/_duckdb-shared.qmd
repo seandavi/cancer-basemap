@@ -8,14 +8,14 @@
 
 ```{ojs}
 //| echo: false
-CATALOG_ENDPOINT = "https://icegate-canceronice.seandavi.workers.dev"
+BUNDLE_URL = "https://basemap.cancerdatasci.org/data/latest/cancerbasemap.duckdb"
 ```
 
 ```{ojs}
 //| echo: false
 // Standard USPS state FIPS codes — public, static, and needed for a
-// selector before any catalog connection exists, so it's a plain array
-// here rather than a live query. geo_id in the catalog is 'state:<fips>'.
+// selector before any connection to the release exists, so it's a plain array
+// here rather than a live query. geo_id in the release is 'state:<fips>'.
 US_STATES = [
   ["01","Alabama"],["02","Alaska"],["04","Arizona"],["05","Arkansas"],["06","California"],
   ["08","Colorado"],["09","Connecticut"],["10","Delaware"],["11","District of Columbia"],
@@ -50,10 +50,10 @@ retryButton = {
 
 ```{ojs}
 //| echo: false
-// Loads a pinned duckdb-wasm build (Quarto's
-// own OJS stdlib DuckDBClient is an older bundled client that cannot ATTACH
-// an Iceberg REST catalog). Depends only on dbGeneration, so it runs once
-// per page load and again only on Retry.
+// Loads a pinned duckdb-wasm build (Quarto's own OJS stdlib DuckDBClient is
+// an older bundled client that cannot ATTACH a remote database file) and
+// attaches the latest release as `cbm`, as the playground does. Depends only
+// on dbGeneration, so it runs once per page load and again only on Retry.
 dbState = {
   dbGeneration; // reactive dependency — Retry increments this to rebuild the instance
   const t0 = performance.now();
@@ -70,13 +70,14 @@ dbState = {
     const db = new duckdb.AsyncDuckDB(new duckdb.ConsoleLogger(duckdb.LogLevel.WARNING), worker);
     await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
     URL.revokeObjectURL(workerUrl);
+    // Read byte ranges only; by default DuckDB-Wasm downloads each whole
+    // Parquet file. All three flags are needed (see playground.qmd).
+    await db.open({
+      filesystem: { reliableHeadRequests: true, allowFullHTTPReads: false, forceFullHTTPReads: false }
+    });
     const conn = await db.connect();
     const tInstantiate = performance.now();
-    await conn.query("INSTALL iceberg; LOAD iceberg; INSTALL httpfs; LOAD httpfs;");
-    const tExtensions = performance.now();
-    await conn.query(
-      `ATTACH 'canceronice' AS coi (TYPE ICEBERG, ENDPOINT '${CATALOG_ENDPOINT}', AUTHORIZATION_TYPE 'none');`
-    );
+    await conn.query(`ATTACH '${BUNDLE_URL}' AS cbm (READ_ONLY)`);
     const tAttach = performance.now();
     // Tear this instance down fully before the cell is ever replaced (a
     // future Retry, or navigating away) — never leave a stale worker + WASM
@@ -90,8 +91,7 @@ dbState = {
       conn,
       timings: {
         instantiate: tInstantiate - tBundle,
-        extensions: tExtensions - tInstantiate,
-        attach: tAttach - tExtensions,
+        attach: tAttach - tInstantiate,
         total: tAttach - t0
       }
     };
@@ -119,23 +119,23 @@ function rowsFromArrow(table) {
 
 ```{ojs}
 //| echo: false
-// Shared status line: "connecting" / a query-failed or catalog-unreachable
+// Shared status line: "connecting" / a query-failed or release-unreachable
 // callout with Retry / a ready line with timings. Every recipe page calls
 // this from its own display cell as renderStatus(dbState, queryState).
 function renderStatus(dbState, queryState) {
   if (dbState.status === "error")
-    return html`<p class="status-error"><strong>Catalog unreachable:</strong> ${dbState.error?.message ?? dbState.error}.
+    return html`<p class="status-error"><strong>Release unreachable:</strong> ${dbState.error?.message ?? dbState.error}.
       Large-table reads can fail intermittently in a long-lived tab
       (<a href="https://github.com/seandavi/cancer-basemap/issues/120">cancer-basemap#120</a>) —
       try Retry, or a hard refresh if Retry doesn't help.</p><p>${retryButton}</p>`;
   if (dbState.status !== "ready")
-    return html`<p class="recipe-status"><em>Connecting to the catalog and loading DuckDB-WASM…</em></p>`;
+    return html`<p class="recipe-status"><em>Connecting to the release and loading DuckDB-WASM…</em></p>`;
   if (queryState.status === "error")
     return html`<p class="status-error"><strong>Query failed:</strong> ${queryState.error?.message ?? queryState.error}</p><p>${retryButton}</p>`;
   if (queryState.status !== "ready")
     return html`<p class="recipe-status"><em>Running query…</em></p>`;
   return html`<p class="recipe-status">DuckDB-WASM ready in ${dbState.timings.total.toFixed(0)} ms
-    (extensions ${dbState.timings.extensions.toFixed(0)} ms, ATTACH ${dbState.timings.attach.toFixed(0)} ms).
+    (ATTACH ${dbState.timings.attach.toFixed(0)} ms).
     This query: ${queryState.ms.toFixed(0)} ms, ${queryState.rows?.length ?? 0} rows.</p>`;
 }
 ```

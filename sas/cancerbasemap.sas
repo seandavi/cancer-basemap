@@ -1,9 +1,9 @@
 /******************************************************************************
  NOT YET RUN IN SAS
 
- Everything DuckDB-side in this file was executed against the live catalog
- (icegate-canceronice.seandavi.workers.dev) with the `duckdb` CLI on a Linux
- build host that has no SAS installed. The SAS statements below (FILENAME
+ Everything DuckDB-side in this file was executed against the live release
+ bundle (basemap.cancerdatasci.org/data/latest/) with the `duckdb` CLI on a
+ Linux build host that has no SAS installed. The SAS statements below (FILENAME
  PIPE, PROC IMPORT, the data step) were written against SAS 9.4 documentation
  for FILENAME PIPE, PROC IMPORT GUESSINGROWS, and INFORMAT/INPUT, but never
  executed by SAS itself.
@@ -32,11 +32,11 @@
                               quoting likely needs to change there.
 ******************************************************************************/
 
-/* cancerbasemap: run a read-only SQL query against the Cancer Basemap
-   (coi.* in the query text) and land the result in a SAS dataset.
+/* cancerbasemap: run a read-only SQL query against a Cancer Basemap release
+   (cbm.* in the query text) and land the result in a SAS dataset.
 
-   Route 1 from issue #115: DuckDB does the Iceberg reading; SAS never talks
-   to Iceberg or to the network. The DuckDB CLI writes CSV to its stdout,
+   Route 1 from issue #115: DuckDB does the reading over HTTPS; SAS never talks
+   to the network itself. Pass release=v2026-11-02 to pin a dated release. The DuckDB CLI writes CSV to its stdout,
    FILENAME PIPE reads that stream as a fileref, and PROC IMPORT turns it
    into a dataset.
 
@@ -50,16 +50,16 @@
    Usage:
      %cancerbasemap(
        query=SELECT geo_id, value, value_status
-             FROM coi.measure.observation
+             FROM cbm.measure.observation
              WHERE source = 'PLACES' AND measure_id = 'PLACES:MAMMOUSE:age_adjusted'
-               AND source_release = '2025' AND valid_to IS NULL;,
+               AND source_release = '2025';,
        out=work.mammo
      );
 */
 %macro cancerbasemap(query=,
                       out=,
                       duckdb=duckdb,
-                      endpoint=https://icegate-canceronice.seandavi.workers.dev,
+                      release=latest,
                       guessingrows=32767);
 
   filename clqry temp;
@@ -70,8 +70,7 @@
      every time the CLI starts, which is why this macro always writes it. */
   data _null_;
     file clqry;
-    put "INSTALL iceberg; LOAD iceberg;";
-    put "ATTACH 'canceronice' AS coi (TYPE ICEBERG, URI '&endpoint', AUTHORIZATION_TYPE 'none');";
+    put "ATTACH 'https://basemap.cancerdatasci.org/data/&release/cancerbasemap.duckdb' AS cbm (READ_ONLY);";
     put "&query";
   run;
 
@@ -98,23 +97,22 @@
 
    Usage:
      %cancerbasemap_fips(
-       query=SELECT fips, name FROM coi.geography.unit
-             WHERE level='county' AND vintage=2020 AND valid_to IS NULL;,
+       query=SELECT fips, name FROM cbm.geography.unit
+             WHERE level='county' AND vintage=2020;,
        out=work.counties,
        vars=fips $5. name $100.
      );
 */
 %macro cancerbasemap_fips(query=, out=, vars=,
                            duckdb=duckdb,
-                           endpoint=https://icegate-canceronice.seandavi.workers.dev);
+                           release=latest);
 
   filename clqry temp;
   filename clcsv pipe "&duckdb -csv -nullvalue '' -f %sysfunc(pathname(clqry))";
 
   data _null_;
     file clqry;
-    put "INSTALL iceberg; LOAD iceberg;";
-    put "ATTACH 'canceronice' AS coi (TYPE ICEBERG, URI '&endpoint', AUTHORIZATION_TYPE 'none');";
+    put "ATTACH 'https://basemap.cancerdatasci.org/data/&release/cancerbasemap.duckdb' AS cbm (READ_ONLY);";
     put "&query";
   run;
 
@@ -138,9 +136,8 @@
     produce the extract, then move the file to where SAS can read it:
 
       duckdb -csv -nullvalue '' -c "
-        INSTALL iceberg; LOAD iceberg;
-        ATTACH 'canceronice' AS coi (TYPE ICEBERG,
-          URI 'https://icegate-canceronice.seandavi.workers.dev', AUTHORIZATION_TYPE 'none');
+        ATTACH 'https://basemap.cancerdatasci.org/data/latest/cancerbasemap.duckdb'
+          AS cbm (READ_ONLY);
         COPY (SELECT ...) TO 'extract.csv' (FORMAT CSV, HEADER TRUE);
       " > extract.csv
 
