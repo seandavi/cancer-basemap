@@ -3,7 +3,7 @@ title: "What changed between PLACES 2024 and 2025"
 ---
 
 Every measure for one county, both PLACES releases side by side, largest
-absolute change first — run live against the real catalog.
+absolute change first — run live against the latest release.
 
 {{< include _duckdb-shared.qmd >}}
 
@@ -28,14 +28,13 @@ Try `08031` (Denver County, CO) for an ordinary county.
 sql = `SELECT o25.measure_id,
        o24.value AS v2024, o25.value AS v2025,
        round(o25.value - o24.value, 2) AS delta
-FROM coi.measure.observation o24
-JOIN coi.measure.observation o25
+FROM cbm.measure.observation o24
+JOIN cbm.measure.observation o25
   ON o24.measure_id = o25.measure_id AND o24.geo_id = o25.geo_id
   AND o24.stratum_id = o25.stratum_id
 WHERE o24.source = 'PLACES' AND o24.source_release = '2024'
   AND o25.source = 'PLACES' AND o25.source_release = '2025'
   AND o24.geo_id = 'county:${countyFips}'
-  AND o24.valid_to IS NULL AND o25.valid_to IS NULL
   AND o24.value IS NOT NULL AND o25.value IS NOT NULL
 ORDER BY abs(delta) DESC
 LIMIT 15`

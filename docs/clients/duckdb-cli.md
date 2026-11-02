@@ -1,42 +1,45 @@
 ## DuckDB CLI
 
 Everything else on this page is a wrapper around this. No account, no
-token, nothing to install beyond `duckdb` itself:
+token, nothing to install beyond `duckdb` itself. A release is a
+`cancerbasemap.duckdb` file of views over Parquet files, read over HTTPS:
 
 ```sh
 duckdb -csv -c "
-INSTALL iceberg; LOAD iceberg;
-ATTACH 'canceronice' AS coi (
-    TYPE ICEBERG, URI 'https://icegate-canceronice.seandavi.workers.dev', AUTHORIZATION_TYPE 'none'
-);
-SELECT * FROM coi.geography.unit LIMIT 5;
+ATTACH 'https://basemap.cancerdatasci.org/data/latest/cancerbasemap.duckdb' AS cbm (READ_ONLY);
+SELECT * FROM cbm.geography.unit LIMIT 5;
 "
 ```
 
-`-csv` is one of several output modes (`-json`, `-table`, `-parquet` isn't
-one but `COPY ... TO 'x.parquet'` is); drop it for a formatted table on a
-terminal. To save a query's result to a file instead of printing it:
+`-csv` is one of several output modes (`-json`, `-table`; `COPY ... TO
+'x.parquet'` for Parquet); drop it for a formatted table on a terminal. To
+save a query's result to a file instead of printing it:
 
 ```sh
 duckdb -c "
-INSTALL iceberg; LOAD iceberg;
-ATTACH 'canceronice' AS coi (
-    TYPE ICEBERG, URI 'https://icegate-canceronice.seandavi.workers.dev', AUTHORIZATION_TYPE 'none'
-);
-COPY (SELECT * FROM coi.measure.observation WHERE source = 'PLACES') TO 'places.parquet';
+ATTACH 'https://basemap.cancerdatasci.org/data/latest/cancerbasemap.duckdb' AS cbm (READ_ONLY);
+COPY (SELECT * FROM cbm.measure.observation WHERE source = 'PLACES') TO 'places.parquet';
 "
 ```
 
-**`URI` vs `ENDPOINT`.** DuckDB renamed the Iceberg attach option; which one
-your build accepts depends on version, and this was tested with two
-different ones on this host:
+**`views.sql` instead of `ATTACH`.** Every release also holds a `views.sql`
+that creates the same views in your own session (`measure.observation`
+instead of `cbm.measure.observation`). `.read` cannot open a URL, so fetch it
+first:
 
-| Tested with | Version | `URI` | `ENDPOINT` |
-| --- | --- | --- | --- |
-| `duckdb` CLI | `v2.1.0-alpha40519` (nightly) | accepted, no warning | accepted, prints `WARNING: The Iceberg attach option 'endpoint' is deprecated; use 'uri' instead` |
-| Python `duckdb` package | `1.5.5` (this repo's own pinned minimum, `duckdb>=1.4`) | rejected: `Unhandled options found: uri` | accepted |
+```sh
+curl -sO https://basemap.cancerdatasci.org/data/latest/views.sql
+duckdb -c ".read views.sql" -c "SELECT count(*) FROM geography.unit"
+```
 
-So: use `URI` on a recent DuckDB build; if you get `Unhandled options found:
-uri`, your DuckDB predates the rename and `ENDPOINT` (as the README also
-notes) is what you need instead. When in doubt, try `URI` first and fall
-back to `ENDPOINT` on that error.
+**Pin a release.** Replace `latest` with a dated folder, e.g.
+`.../data/v2026-11-02/cancerbasemap.duckdb`. Each dated folder's views read
+that folder's own Parquet files. R2 keeps the newest release of each of the
+last 12 months; a release you will cite is on Hugging Face as
+`seandavis/cancerbasemap@2026-11-02` (download it, then query the local
+files). A bundle holds current rows only, so there is no `valid_to` column to
+filter on.
+
+Run with `duckdb` `v2.0.0-alpha43763` and with the Python `duckdb` package
+`1.5.5` (this repo's pinned version): both attach the release over HTTPS with
+no extension to install by hand (`httpfs` loads itself).

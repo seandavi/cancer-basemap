@@ -4,14 +4,14 @@ jupyter: coi-docs
 ---
 
 This page is generated at *build* time — the measures table and the
-provenance table are queried live from the catalog, and every table's
+provenance table are queried at build time from the latest release, and every table's
 column docs come straight from the declared schemas
 (`cancerbasemap.schemas`) in this repository, not hand-copied. If a release
 adds a measure or a schema gains a column, this page's next render shows it.
 
 ## Measures
 
-Every measure the catalog currently defines, by source. Type in the search
+Every measure the latest release defines, by source. Type in the search
 box to filter.
 
 ```{python}
@@ -19,15 +19,10 @@ box to filter.
 import duckdb
 
 con = duckdb.connect()
-con.execute("INSTALL iceberg; LOAD iceberg; INSTALL httpfs; LOAD httpfs;")
-con.execute(
-    "ATTACH 'canceronice' AS coi (TYPE ICEBERG, "
-    "ENDPOINT 'https://icegate-canceronice.seandavi.workers.dev', "
-    "AUTHORIZATION_TYPE 'none');"
-)
+con.execute("ATTACH 'https://basemap.cancerdatasci.org/data/latest/cancerbasemap.duckdb' AS cbm (READ_ONLY)")
 measures_df = con.sql("""
     SELECT source, measure_id, label, units, rate_basis, method
-    FROM coi.measure.definition
+    FROM cbm.measure.definition
     ORDER BY source, measure_id
 """).df()
 print(f"{len(measures_df)} measures across {measures_df['source'].nunique()} sources.")
@@ -56,9 +51,11 @@ Inputs.table(measureSearch, {
 
 Every table this repository declares (`cancerbasemap.schemas.TABLES`),
 grouped by namespace, with its comment, its business key, and every
-column's own doc string. A table not yet populated in the live catalog
+column's own doc string. A table not yet populated in the release
 still appears here — this section is the *declared* schema, not a scan of
-what happens to exist right now.
+what happens to exist right now. A release holds current rows only, so the
+validity columns the writers keep (`valid_from`, `valid_to`) are not shown:
+they are not in the release.
 
 ```{python}
 #| echo: false
@@ -84,6 +81,8 @@ for ns, ns_doc in schemas.NAMESPACES.items():
         print("| Column | Type | Required | Doc |")
         print("| --- | --- | --- | --- |")
         for f in table_def.schema.fields:
+            if f.name in ("valid_from", "valid_to"):
+                continue
             doc = (f.doc or "").replace("|", "\\|").replace("\n", " ")
             print(f"| `{f.name}` | {f.field_type} | {'yes' if f.required else ''} | {doc} |")
         print()
@@ -91,14 +90,16 @@ for ns, ns_doc in schemas.NAMESPACES.items():
 
 ## Releases
 
-What each catalog release was built from — source, upstream version, and
-when it was retrieved.
+What the release was built from — source, upstream version, and when it
+was retrieved. Its `release` column is the landing release the data came in
+under (`2026.09`, or a dated weekly snapshot such as `2026.10.26`), not the
+release folder's date.
 
 ```{python}
 #| echo: false
 con.sql("""
     SELECT release, source, source_version, version_method, retrieved_at, row_count
-    FROM coi.provenance.release
+    FROM cbm.provenance.release
     ORDER BY release, source, source_version
 """).df()
 ```

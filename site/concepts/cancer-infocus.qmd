@@ -20,26 +20,26 @@ reachable from R, Python, SQL, a browser, or an assistant — not only through
 one application.
 
 The intended relationship: Cancer InFocus (or ECCO, or any center's own
-tool) reads *from* the lake, the same way a downstream consumer reads from
-any published catalog. A recipe that writes CIFTools-shaped files for a
+tool) reads *from* Cancer Basemap, the same way a downstream consumer reads from
+any published dataset. A recipe that writes CIFTools-shaped files for a
 chosen catchment is a better path to adoption than a rival dashboard, and
 the CARDS group is the audience this needs to reach before that recipe ships
 ([SPEC.md § Recipes](https://github.com/seandavi/cancer-basemap/blob/main/SPEC.md#recipes)
 lists it as recipe 4, and open questions call out approaching the CIF team
 directly before milestone M2 closes).
 
-## What the lake cannot carry
+## What Cancer Basemap cannot carry
 
 Cancer InFocus's own county-level cancer *incidence* comes from the USCS
 Incidence Analytic Dataset through special access — a bilateral or
 Research-Data-Center arrangement between the requester and CDC/NCI, not a
-public redistribution licence. A public lake structurally cannot republish
+public redistribution licence. A public dataset structurally cannot republish
 that: the [licence gate](licence-gate.qmd) rules out anything that isn't
 redistributable by a third party, and special-access USCS incidence fails
-that test regardless of how the data would otherwise be used. What Catchment
-Lake carries instead is State Cancer Profiles' own *published* county
+that test regardless of how the data would otherwise be used. What Cancer
+Basemap carries instead is State Cancer Profiles' own *published* county
 incidence and mortality rates — the same public route SCP itself uses, and
-the one this lake keeps at every vintage rather than only the latest.
+the one Cancer Basemap keeps at every vintage rather than only the latest.
 
 The ACR (American College of Radiology) Lung Cancer Screening Registry
 facility locator is very likely proprietary and is not being pursued as a

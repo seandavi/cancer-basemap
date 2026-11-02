@@ -1,7 +1,7 @@
 """Offline check for recipes/cif_parity.py's join/comparison logic. No real
 Cancer InFocus data is used anywhere here -- tests/tiny_cif_dir/*.csv is a
 synthetic fixture this test invents (values and geographies made up), and the
-lake side is a local in-memory stub of the `coi` schema instead of a real
+lake side is a local in-memory stub of the `cbm` schema instead of a real
 ATTACH, following tests/test_clients_examples.py's pattern.
 """
 import importlib.util
@@ -21,22 +21,22 @@ spec.loader.exec_module(cif_parity)
 @pytest.fixture
 def con():
     con = duckdb.connect()
-    con.execute("ATTACH ':memory:' AS coi")
+    con.execute("ATTACH ':memory:' AS cbm")
     con.execute("""
-        CREATE SCHEMA coi.geography;
-        CREATE TABLE coi.geography.unit (geo_id VARCHAR, level VARCHAR, fips VARCHAR);
-        INSERT INTO coi.geography.unit VALUES
+        CREATE SCHEMA cbm.geography;
+        CREATE TABLE cbm.geography.unit (geo_id VARCHAR, level VARCHAR, fips VARCHAR);
+        INSERT INTO cbm.geography.unit VALUES
             ('county:08001', 'county', '08001'),
             ('county:08003', 'county', '08003'),
             ('tract:08001960100', 'tract', '08001960100'),
             ('tract:08001960200', 'tract', '08001960200'),
             ('tract:08001960300', 'tract', '08001960300');
 
-        CREATE SCHEMA coi.measure;
-        CREATE TABLE coi.measure.observation (
+        CREATE SCHEMA cbm.measure;
+        CREATE TABLE cbm.measure.observation (
             geo_id VARCHAR, source VARCHAR, source_release VARCHAR,
             measure_id VARCHAR, value DOUBLE);
-        INSERT INTO coi.measure.observation VALUES
+        INSERT INTO cbm.measure.observation VALUES
             -- PLACES: one exact match, one deliberate mismatch, one lake-only
             ('county:08001', 'PLACES', '2024', 'PLACES:CANCER:crude', 6.5),
             ('county:08001', 'PLACES', '2024', 'PLACES:CSMOKING:crude', 21.0),
@@ -56,9 +56,9 @@ def con():
             ('tract:08001960100', 'RUCA', '2020', 'RUCA:primary', 1),
             ('tract:08001960100', 'RUCA', '2020', 'RUCA:secondary', 2);
 
-        CREATE SCHEMA coi.facility;
-        CREATE TABLE coi.facility.site (geo_id VARCHAR, kind VARCHAR, attributes_json VARCHAR);
-        INSERT INTO coi.facility.site VALUES
+        CREATE SCHEMA cbm.facility;
+        CREATE TABLE cbm.facility.site (geo_id VARCHAR, kind VARCHAR, attributes_json VARCHAR);
+        INSERT INTO cbm.facility.site VALUES
             ('county:08001', 'fqhc', NULL),
             ('county:08001', 'fqhc', NULL),
             ('county:08003', 'fqhc', NULL),

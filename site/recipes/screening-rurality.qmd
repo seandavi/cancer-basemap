@@ -3,11 +3,10 @@ title: "Screening in a state's counties, with rurality"
 ---
 
 This is the same measure/release query the [Home](/index.qmd) map's data
-was built from — run here **live**, against the real, 25-million-row
-`measure.observation` table, through DuckDB-WASM in your own browser.
-Scoped to one state rather than the whole country: PLACES's own PLACES
-partition is written as one very large Parquet file per release, and a
-national-scope live read of it is exactly the pattern that fails
+was built from — run here **live**, against the real, 29.6-million-row
+`measure.observation` table in the latest release, through DuckDB-WASM in your own browser.
+Scoped to one state rather than the whole country: `measure.observation`
+is one very large Parquet file, and a national-scope live read of it is exactly the pattern that fails
 intermittently in this DuckDB-WASM build
 ([cancer-basemap#120](https://github.com/seandavi/cancer-basemap/issues/120)).
 One state at a time stays well inside the sizes that read reliably.
@@ -40,14 +39,13 @@ viewof releaseChoice = Inputs.select(RELEASES, { label: "Release" })
 ```{ojs}
 //| echo: false
 sql = `SELECT u.name, o.value AS pct, o.lower, o.upper, o.value_status, r.value AS rucc_code
-FROM coi.measure.observation o
-JOIN coi.geography.unit u
-  ON u.geo_id = o.geo_id AND u.vintage = 2026 AND u.valid_to IS NULL
-LEFT JOIN coi.measure.observation r
-  ON r.geo_id = o.geo_id AND r.source = 'RUCC' AND r.valid_to IS NULL
+FROM cbm.measure.observation o
+JOIN cbm.geography.unit u
+  ON u.geo_id = o.geo_id AND u.vintage = 2026
+LEFT JOIN cbm.measure.observation r
+  ON r.geo_id = o.geo_id AND r.source = 'RUCC'
 WHERE o.source = 'PLACES' AND o.measure_id = '${measureChoice.measure_id}'
   AND o.source_release = '${releaseChoice}' AND u.parent_geo_id = 'state:${stateChoice.fips}'
-  AND o.valid_to IS NULL
 ORDER BY pct`
 ```
 

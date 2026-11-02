@@ -1,9 +1,9 @@
 # Cancer Basemap docs site
 
 A [Quarto](https://quarto.org/) website: static pages plus build-time
-queries against the live catalog (Dictionary, Sources, Concepts, the Home
+queries against the latest release bundle (Dictionary, Concepts, Start here, the Home
 page's map extract) and live in-browser DuckDB-WASM queries (Recipes).
-Nothing here writes to the catalog.
+Nothing here writes to a release.
 
 Supersedes the throwaway prototype from #119 — that PR is not merged; this
 is the real skeleton (#122).
@@ -11,10 +11,10 @@ is the real skeleton (#122).
 ## Set up the build-time Python kernel
 
 Build-time chunks (`jupyter: coi-docs` in a page's front matter) run this
-repo's own `cancerbasemap` package against the live catalog. Set up a small
+repo's own `cancerbasemap` package against the latest release. Set up a small
 `uv`-managed venv once, registered as a Jupyter kernel — cheaper than
 compiling R's `duckdb` package, and this repo's own dependency is already
-`duckdb` + `pyiceberg`, not R:
+`duckdb`, not R:
 
 ```sh
 cd site
@@ -46,14 +46,14 @@ quarto render .
 unless that page's source changed — so a clean render with no network access
 and no `coi-docs` kernel still succeeds (this is what CI does; see below). A
 page whose source did change re-executes for real, against the live
-catalog, and needs the kernel above plus network access.
+release, and needs the kernel above plus network access.
 
 The Home page's map data (`site/extracts/home_map.json`) is a build-time side
 effect, not a cached cell *output* — `freeze` doesn't reconstruct it the way
 it reconstructs a Dictionary table, so `extracts/home_map.json` is committed to
 the repo directly. Regenerate it (and the `_freeze/` entries for every page
 whose numbers it feeds) with a real network render whenever the underlying
-catalog changes meaningfully:
+release changes meaningfully:
 
 ```sh
 rm -rf _freeze/index _freeze/dictionary _freeze/sources* _freeze/concepts _freeze/start
@@ -67,9 +67,8 @@ git add extracts/home_map.json _freeze
 orange (ADR-0001 § The site; palette in `theme/basemap-{light,dark}.scss`).
 `releases.qmd`, `playground.qmd` and `guides/versions-and-citation.qmd` have no
 build-time code: they read `/data/` (the R2 listing and each `manifest.json`)
-and Hugging Face in the browser, so they say "No releases yet" until the first
-release is published. `shell-links.js` adds "Open in DuckDB Shell" under SQL
-examples (opt out with `.no-shell`; Iceberg examples are skipped).
+and Hugging Face in the browser. `shell-links.js` adds "Open in DuckDB Shell" under SQL
+examples (opt out with `.no-shell`).
 
 ## Preview
 

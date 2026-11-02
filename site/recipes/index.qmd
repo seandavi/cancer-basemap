@@ -2,8 +2,8 @@
 title: "Recipes"
 ---
 
-Every page below runs its query **live**, in your browser, against the real
-catalog through DuckDB-WASM — no server renders these results. Each shows
+Every page below runs its query **live**, in your browser, against the latest
+release through DuckDB-WASM — no server renders these results. Each shows
 the SQL it ran, so you can copy it straight into your own DuckDB.
 
 ::: {.callout-warning}

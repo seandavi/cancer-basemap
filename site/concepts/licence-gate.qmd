@@ -28,13 +28,8 @@ for every one of its 45 distinct upstream sources and builds an **allowlist**
 import duckdb
 
 con = duckdb.connect()
-con.execute("INSTALL iceberg; LOAD iceberg; INSTALL httpfs; LOAD httpfs;")
-con.execute(
-    "ATTACH 'canceronice' AS coi (TYPE ICEBERG, "
-    "ENDPOINT 'https://icegate-canceronice.seandavi.workers.dev', "
-    "AUTHORIZATION_TYPE 'none');"
-)
-n = con.sql("SELECT count(distinct column_name) FROM coi.raw.hrsa__ahrf").fetchone()[0]
+con.execute("ATTACH 'https://basemap.cancerdatasci.org/data/latest/cancerbasemap.duckdb' AS cbm (READ_ONLY)")
+n = con.execute("SELECT count(distinct column_name) FROM cbm.raw.hrsa__ahrf").fetchall()[0][0]
 print(f"Columns actually landed in raw.hrsa__ahrf today: {n}")
 ```
 
@@ -65,7 +60,7 @@ columns are excluded entirely — never landed, in raw or anywhere else:
 
 ```{python}
 #| echo: false
-cols = con.sql("DESCRIBE coi.raw.sdwis__pub_water_systems").df()["column_name"].tolist()
+cols = con.sql("DESCRIBE cbm.raw.sdwis__pub_water_systems").df()["column_name"].tolist()
 excluded = ["ADMIN_NAME", "EMAIL_ADDR", "PHONE_NUMBER", "PHONE_EXT_NUMBER",
             "FAX_NUMBER", "ALT_PHONE_NUMBER", "ORG_NAME", "ADDRESS_LINE1", "ADDRESS_LINE2"]
 present = [c for c in excluded if c in cols]
@@ -81,7 +76,7 @@ From SPEC.md's own licence gate, unchanged by anything landed since:
 
 - **USCS county incidence via special access** — RDC-only or bilateral
   access, the reason Cancer InFocus has county cancer incidence and a
-  public lake structurally cannot ([Cancer InFocus](cancer-infocus.qmd)
+  public dataset structurally cannot ([Cancer InFocus](cancer-infocus.qmd)
   covers what this means for the two projects' relationship).
 - **SEER Research / Research Plus data** — DUA per user.
 - **Registry microdata of any kind.**

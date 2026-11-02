@@ -7,8 +7,7 @@ Edit the query and press **Run**. It runs in your browser with
 [DuckDB-Wasm](https://duckdb.org/docs/api/wasm/overview), against
 `latest/` attached as `basemap` (and selected with `USE basemap`, so
 `measure.observation` works as well as `basemap.measure.observation`). The
-first run downloads DuckDB itself, a few MB. Until the first release is
-published the attach fails and the box shows the error.
+first run downloads DuckDB itself, a few MB.
 
 Queries that filter and use `LIMIT` are fast, because DuckDB fetches only the
 parts of each Parquet file it needs. Full scans of the big tables

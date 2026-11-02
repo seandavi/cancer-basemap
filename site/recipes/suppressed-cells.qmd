@@ -21,8 +21,8 @@ viewof sourceChoice = Inputs.select(SOURCES, { label: "Source", value: "PLACES" 
 ```{ojs}
 //| echo: false
 sql = `SELECT source_release, measure_id, geo_id, value_status, value
-FROM coi.measure.observation
-WHERE source = '${sourceChoice}' AND value_status != 'reported' AND valid_to IS NULL
+FROM cbm.measure.observation
+WHERE source = '${sourceChoice}' AND value_status != 'reported'
 ORDER BY source_release, measure_id, geo_id
 LIMIT 500`
 ```

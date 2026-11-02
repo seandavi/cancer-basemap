@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """Parity diff between a locally-supplied Cancer InFocus (CIF) national
-archive extraction and the Cancer Basemap public Iceberg
-catalog, attached read-only over the anonymous icegate endpoint (see
-docs/clients/duckdb-cli.md).
+archive extraction and the Cancer Basemap release bundle, attached read-only over
+HTTPS (see docs/clients/duckdb-cli.md).
 
 Usage:
     uv run --with duckdb python recipes/cif_parity.py --cif-dir cif/stats --states 08,21
@@ -35,7 +34,7 @@ import sys
 
 import duckdb
 
-LAKE_ENDPOINT = "https://icegate-canceronice.seandavi.workers.dev"
+BUNDLE_URL = "https://basemap.cancerdatasci.org/data/latest/cancerbasemap.duckdb"
 
 # geography.unit carries one row per (geo_id, boundary vintage) -- e.g.
 # county:08001 appears for TIGER vintages 2010/2020/2026 -- so joining
@@ -43,7 +42,7 @@ LAKE_ENDPOINT = "https://icegate-canceronice.seandavi.workers.dev"
 # geo_id first; shared by the module and its offline test.
 GEO_FIPS_VIEW_SQL = (
     "CREATE OR REPLACE TEMP VIEW geo_fips AS "
-    "SELECT DISTINCT geo_id, level, fips FROM coi.geography.unit"
+    "SELECT DISTINCT geo_id, level, fips FROM cbm.geography.unit"
 )
 
 # CIF rf_and_screening measure -> lake PLACES topic code (both are CDC PLACES
@@ -109,11 +108,7 @@ RUCA_MAP = {
 
 def connect():
     con = duckdb.connect()
-    con.execute("INSTALL iceberg; LOAD iceberg;")
-    con.execute(
-        f"ATTACH 'canceronice' AS coi (TYPE ICEBERG, ENDPOINT '{LAKE_ENDPOINT}', "
-        f"AUTHORIZATION_TYPE 'none')"
-    )
+    con.execute(f"ATTACH '{BUNDLE_URL}' AS cbm (READ_ONLY)")
     con.execute(GEO_FIPS_VIEW_SQL)
     return con
 
@@ -187,7 +182,7 @@ def compare_places(con, cif_dir, states):
     # percent -- hence the *100 above.
     lake_sql = f"""
         SELECT fips, replace(measure_id,'PLACES:','') AS key0, value
-        FROM coi.measure.observation o
+        FROM cbm.measure.observation o
         JOIN geo_fips g ON o.geo_id = g.geo_id
         WHERE o.source='PLACES' AND o.source_release='2024'
           AND g.level='county' AND substr(g.fips,1,2) IN ({state_list})
@@ -214,7 +209,7 @@ def compare_svi(con, cif_dir, states):
     # the report rather than silently forcing a match.
     lake_sql = f"""
         SELECT g.fips, replace(replace(o.measure_id,'SVI:RPL_',''),':2020','') AS key, o.value
-        FROM coi.measure.observation o
+        FROM cbm.measure.observation o
         JOIN geo_fips g ON o.geo_id = g.geo_id
         WHERE o.source='SVI' AND o.source_release='2022'
           AND g.level='county' AND substr(g.fips,1,2) IN ({state_list})
@@ -234,7 +229,7 @@ def compare_fara(con, cif_dir, states):
     """
     lake_sql = f"""
         SELECT g.fips, 'LILATracts_Vehicle' AS key, o.value
-        FROM coi.measure.observation o
+        FROM cbm.measure.observation o
         JOIN geo_fips g ON o.geo_id = g.geo_id
         WHERE o.source='FARA' AND o.source_release='2019'
           AND g.level='tract' AND substr(g.fips,1,2) IN ({state_list})
@@ -254,7 +249,7 @@ def compare_rucc(con, cif_dir, states):
     """
     lake_sql = f"""
         SELECT g.fips, 'code' AS key, o.value
-        FROM coi.measure.observation o
+        FROM cbm.measure.observation o
         JOIN geo_fips g ON o.geo_id = g.geo_id
         WHERE o.source='RUCC' AND o.source_release='2023'
           AND g.level='county' AND substr(g.fips,1,2) IN ({state_list})
@@ -278,7 +273,7 @@ def compare_ruca(con, cif_dir, states):
     # convention as compare_svi.
     lake_sql = f"""
         SELECT g.fips, replace(o.measure_id,'RUCA:','') AS key, o.value
-        FROM coi.measure.observation o
+        FROM cbm.measure.observation o
         JOIN geo_fips g ON o.geo_id = g.geo_id
         WHERE o.source='RUCA' AND o.source_release='2020'
           AND g.level='tract' AND substr(g.fips,1,2) IN ({state_list})
@@ -308,7 +303,7 @@ def compare_facilities(con, cif_dir, states, cif_type, lake_kind, label):
             COALESCE(CASE substr(g.fips,1,2) {state_case} END,
                      json_extract_string(s.attributes_json, '$.state')) AS st,
             count(*)
-        FROM coi.facility.site s LEFT JOIN geo_fips g ON s.geo_id = g.geo_id
+        FROM cbm.facility.site s LEFT JOIN geo_fips g ON s.geo_id = g.geo_id
         WHERE s.kind = '{lake_kind}'
         GROUP BY 1 HAVING st IN ({abbrevs}) ORDER BY 1
     """).fetchall()
@@ -317,7 +312,7 @@ def compare_facilities(con, cif_dir, states, cif_type, lake_kind, label):
 
 def run(con, cif_dir, states):
     """All comparisons against an already-attached `con` (real ATTACH in
-    main(), or a stubbed `coi` schema in the offline test). Returns the list
+    main(), or a stubbed `cbm` schema in the offline test). Returns the list
     of result dicts main() prints -- factored out so the test can assert on
     it directly instead of scraping stdout."""
     results = []

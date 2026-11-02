@@ -20,15 +20,10 @@ of every boundary change that mattered at the county level between 2014 and
 import duckdb
 
 con = duckdb.connect()
-con.execute("INSTALL iceberg; LOAD iceberg; INSTALL httpfs; LOAD httpfs;")
-con.execute(
-    "ATTACH 'canceronice' AS coi (TYPE ICEBERG, "
-    "ENDPOINT 'https://icegate-canceronice.seandavi.workers.dev', "
-    "AUTHORIZATION_TYPE 'none');"
-)
+con.execute("ATTACH 'https://basemap.cancerdatasci.org/data/latest/cancerbasemap.duckdb' AS cbm (READ_ONLY)")
 con.sql("""
     SELECT svi_edition, count(distinct fips) AS counties
-    FROM coi.raw.svi__county
+    FROM cbm.raw.svi__county
     GROUP BY 1 ORDER BY 1
 """).df()
 ```
@@ -41,7 +36,7 @@ are queryable directly:
 #| echo: false
 con.sql("""
     SELECT svi_edition, count(*) AS rows
-    FROM coi.raw.svi__county
+    FROM cbm.raw.svi__county
     WHERE fips IN ('02261', '02063', '02066')  -- Valdez-Cordova / Chugach / Copper River
     GROUP BY 1 ORDER BY 1
 """).df()
@@ -55,7 +50,7 @@ two, the +1 between the 2018 and 2020 counts.
 #| echo: false
 con.sql("""
     SELECT svi_edition, count(*) AS rows
-    FROM coi.raw.svi__county
+    FROM cbm.raw.svi__county
     WHERE fips LIKE '09%'  -- Connecticut
     GROUP BY 1 ORDER BY 1
 """).df()
@@ -75,14 +70,14 @@ edition, with the pre-2016 code still resolving through `geography.alias`:
 #| echo: false
 con.sql("""
     SELECT old_geo_id, new_geo_id, effective_year, change_type, old_name, new_name
-    FROM coi.geography.alias
+    FROM cbm.geography.alias
     WHERE old_geo_id = 'county:46113'
 """).df()
 ```
 
 ## Why `geography.unit` carries a `vintage` at all
 
-Every fact in the lake joins through `geography.unit` by `geo_id`, but a
+Every fact in Cancer Basemap joins through `geography.unit` by `geo_id`, but a
 `geo_id` alone doesn't say which boundary edition it belongs to. `vintage`
 makes that explicit, and it's why every recipe on this site names a vintage
 on its geography join (`u.vintage = 2026`) instead of trusting a measure's

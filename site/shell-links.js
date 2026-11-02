@@ -2,8 +2,7 @@
 // shell.duckdb.org runs the queries in its URL hash, #queries=v0,<q1>,<q2>,...,
 // each one with space<->hyphen and semicolon<->tilde swapped, then URI-encoded
 // (the symmetric `extraswaps` of duckdb/duckdb-wasm#1529). Examples that don't
-// ATTACH get the latest release attached first. Opt out with `.no-shell`; Iceberg
-// examples (the catalog the bundle replaces) are skipped, the Shell can't ATTACH one.
+// ATTACH get the latest release attached first. Opt out with `.no-shell`.
 window.basemapShellUrl = function (sql) {
   const swap = (s) => s.replace(/[ \-;~]/g, (c) => ({ " ": "-", "-": " ", ";": "~", "~": ";" })[c]);
   // Statements go through as written: comments and whitespace may sit inside string literals.
@@ -18,7 +17,7 @@ window.basemapShellUrl = function (sql) {
     stmts.map((s) => encodeURIComponent(swap(s + ";"))).join(",");
 };
 document.querySelectorAll("pre.sourceCode.sql").forEach((pre) => {
-  if (pre.matches(".no-shell, .no-shell *") || /TYPE\s+ICEBERG/i.test(pre.textContent)) return;
+  if (pre.matches(".no-shell, .no-shell *")) return;
   const a = document.createElement("a");
   a.href = window.basemapShellUrl(pre.textContent);
   a.target = "_blank";
