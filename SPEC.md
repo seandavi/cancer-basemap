@@ -415,8 +415,10 @@ overlap_fraction     -- share of the county's area inside the catchment, 0-1
 valid_from, valid_to
 ```
 
-`geo_id` is `county:<5-digit FIPS>`, matching `geography.unit`. Membership is a
-county, not a tract, and may be partial: `overlap_fraction` is 1.0 for a whole
+`geo_id` is `county:<5-digit FIPS>`, matching `geography.unit` — except the 10
+American Samoa, Guam and Northern Mariana Islands county-equivalents under
+Hawai'i's catchment, which `geography.unit` does not carry yet (#203), so those members do not join until it lands them.
+Membership is a county, not a tract, and may be partial: `overlap_fraction` is 1.0 for a whole
 county and the true share where a catchment cuts one (Memorial Sloan Kettering,
 Norris). A county is a member only at `overlap_fraction >= 0.01`.
 

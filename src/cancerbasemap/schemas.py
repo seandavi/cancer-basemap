@@ -5671,7 +5671,9 @@ TABLES = {
             NestedField(1, "center_id", StringType(), required=True,
                         doc="FK catchment.center (with declared_by = center.source)."),
             NestedField(2, "geo_id", StringType(), required=True,
-                        doc="FK geography.unit: 'county:<5-digit FIPS>'."),
+                        doc="FK geography.unit: 'county:<5-digit FIPS>'. Exception: the 10 American "
+                            "Samoa, Guam and Northern Mariana Islands county-equivalents under "
+                            "Hawai'i's catchment are not in geography.unit yet (#203)."),
             NestedField(3, "geo_vintage", IntegerType(), required=True,
                         doc="FK geography.unit's vintage: 2020 -- the Census 2020 county file the "
                             "portal ships, Connecticut as its eight legacy counties."),

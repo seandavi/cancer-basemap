@@ -152,3 +152,26 @@ def test_raw_columns_all_have_docs():
     for identifier in ("raw.nci__catchment_areas", "catchment.center", "catchment.member"):
         for f in schemas.TABLES[identifier].schema.fields:
             assert f.doc, f"{identifier}.{f.name} has no doc"
+
+
+def test_overlap_is_equal_area_not_degree_area(cat, tmp_path):
+    # One county spanning 30N-50N; the catchment is its northern half in degrees (40N-50N).
+    def rect(y0, y1):
+        return f"ST_GeomFromText('POLYGON((0 {y0}, 1 {y0}, 1 {y1}, 0 {y1}, 0 {y0}))')"
+    counties = write_zip(tmp_path, "counties", f"SELECT '01001' AS GEOID, {rect(30, 50)} AS geom")
+    north = write_zip(tmp_path, "catchments",
+                      "SELECT 'North' AS name, 1 AS ID, 'Cancer Center' AS type, 'x' AS address, "
+                      "'Alabama' AS state, 'Sub-State' AS GeoDesc, 'u' AS url, 0 AS draworder, "
+                      f"{rect(40, 50)} AS geom")
+    nci_catchment.ingest(cat, REL, north, counties, retrieved_on="2026-08-01")
+    got = rows(cat, "catchment.member")[0]["overlap_fraction"]
+
+    con = duckdb.connect()
+    con.execute("INSTALL spatial")
+    con.execute("LOAD spatial")
+    (expected,) = con.execute(f"""
+        SELECT ST_Area(ST_Transform({rect(40, 50)}, 'EPSG:4269', 'EPSG:5070', always_xy := true))
+             / ST_Area(ST_Transform({rect(30, 50)}, 'EPSG:4269', 'EPSG:5070', always_xy := true))
+    """).fetchone()
+    assert got == pytest.approx(expected, abs=1e-3)
+    assert abs(got - 0.5) > 0.02  # the degree ratio would read 0.5
