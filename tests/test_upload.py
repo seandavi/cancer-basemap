@@ -2,6 +2,9 @@
 
 import hashlib
 import json
+import os
+import subprocess
+import sys
 from datetime import date
 
 import duckdb
@@ -22,7 +25,8 @@ def _bundle(tmp_path, release=RELEASE, gene_id=1, gated=True):
     (out / "annotation").mkdir(parents=True)
     duckdb.sql(f"COPY (SELECT {gene_id} AS gene_id) TO '{out}/annotation/gene.parquet' (FORMAT parquet)")
     table = {"schema": "annotation", "table": "gene", "path": "annotation/gene.parquet",
-             "row_count": 1, "comment": None, "columns": [], "sha256": str(gene_id)}
+             "row_count": 1, "comment": None, "columns": [],
+             "sha256": hashlib.sha256((out / "annotation/gene.parquet").read_bytes()).hexdigest()}
     manifest = json.dumps({"release": release, "base_url": "https://example.org/x", "tables": [table]})
     (out / "manifest.json").write_text(manifest)
     if gated:
@@ -149,6 +153,7 @@ def test_prune_follows_the_retention_rule_and_leaves_latest_and_non_dates(tmp_pa
     bucket, bundle = _bucket(tmp_path), _bundle(tmp_path)
     for d in ("v2025-10-15", "v2025-10-20"):  # a month's release and its correction, long past
         (bucket / d).mkdir()
+        (bucket / d / "manifest.json").write_text("{}")
     upload.upload(bundle, BUCKET_FS, str(bucket), apply=True, today=TODAY, get_hf_manifest=on_hf(bundle))
     assert sorted(p.name for p in bucket.iterdir()) == [
         "latest", "v2025-10-20", "v2026-09-01", "v2026-10-04", "v2026-10-29",
@@ -203,3 +208,81 @@ def test_select_keep_never_prunes_the_folder_being_uploaded_even_if_older():
 def test_select_keep_ignores_names_that_are_not_real_dates():
     names = ["v2026-02-30", "vnotadate", "latest", "v2026-05-01"]
     assert _keep(names, "v2026-05-01", "2026-06-01") == {"v2026-05-01"}
+
+
+def test_a_changed_parquet_under_an_unchanged_manifest_and_gate_is_refused_before_the_bucket(tmp_path, capsys):
+    bucket, bundle = _bucket(tmp_path), _bundle(tmp_path)
+    before = _snapshot(bucket)
+    duckdb.sql(f"COPY (SELECT 2 AS gene_id) TO '{bundle}/annotation/gene.parquet' (FORMAT parquet)")
+    with pytest.raises(SystemExit, match="annotation/gene.parquet does not match its manifest.json sha256"):
+        upload.upload(bundle, BUCKET_FS, str(bucket), apply=True, today=TODAY, get_hf_manifest=on_hf(bundle))
+    assert _snapshot(bucket) == before and capsys.readouterr().out == ""
+
+
+def test_latest_loses_its_manifest_before_any_overwrite_so_an_interrupted_replacement_is_incomplete(
+        tmp_path, monkeypatch):
+    bucket, bundle = _bucket(tmp_path), _bundle(tmp_path)
+    assert (bucket / "latest" / "manifest.json").exists()
+    real = upload._put
+    puts = []
+
+    def fail_after_first_latest_put(fs, local, key, apply, attempts=3):
+        real(fs, local, key, apply, attempts)
+        if "/latest/" in key:
+            puts.append(key)
+            raise OSError("connection reset")
+    monkeypatch.setattr(upload, "_put", fail_after_first_latest_put)
+    with pytest.raises(OSError):
+        upload.upload(bundle, BUCKET_FS, str(bucket), apply=True, today=TODAY, get_hf_manifest=on_hf(bundle))
+    assert puts == [f"{bucket}/latest/annotation/gene.parquet"]
+    assert (bucket / "latest" / "annotation/gene.parquet").exists()
+    assert not (bucket / "latest" / "manifest.json").exists()
+
+
+def test_an_incomplete_dated_folder_never_displaces_a_complete_one(tmp_path):
+    bucket, bundle = tmp_path / "bucket", _bundle(tmp_path, release="2026-06-01")
+    for d, complete in (("v2026-05-01", True), ("v2026-05-20", False)):
+        (bucket / d).mkdir(parents=True)
+        if complete:
+            (bucket / d / "manifest.json").write_text("{}")
+    upload.upload(bundle, BUCKET_FS, str(bucket), apply=True, today=date(2026, 6, 20),
+                  get_hf_manifest=on_hf(bundle))
+    assert sorted(p.name for p in bucket.iterdir()) == ["latest", "v2026-05-01", "v2026-06-01"]
+
+
+def test_r2_credentials_come_from_env_else_gcloud_and_are_never_printed(monkeypatch, capsys):
+    calls = []
+
+    def gcloud(cmd, **kw):
+        calls.append(cmd)
+        return subprocess.CompletedProcess(cmd, 0, stdout="from-gsm\n")
+    monkeypatch.setattr(upload.subprocess, "run", gcloud)
+    monkeypatch.setenv("CU_OPENALEX_R2_ACCESS_KEY_ID", "from-env")
+    monkeypatch.delenv("CU_OPENALEX_R2_ACCOUNT_ID", raising=False)
+    monkeypatch.delenv("CU_OPENALEX_R2_SECRET_ACCESS_KEY", raising=False)
+    upload.r2_filesystem()
+    assert [c[5] for c in calls] == ["--secret=cdsci-r2-account-id", "--secret=cdsci-r2-secret-access-key"]
+    assert all(c[-1] == "--project=cdsci-infra" for c in calls)
+    out = capsys.readouterr()
+    assert "from-gsm" not in out.out + out.err and "from-env" not in out.out + out.err
+
+
+@pytest.mark.parametrize("force", [True, False])
+def test_an_unreachable_hugging_face_refuses_even_with_a_cached_manifest(tmp_path, force):
+    # A subprocess, since huggingface_hub reads HF_ENDPOINT / HF_HUB_CACHE at import. Without
+    # force_download the cached copy is returned (force=False shows the cache is really hit).
+    snap = tmp_path / "cache" / "datasets--seandavis--cancerbasemap"
+    (snap / "snapshots" / "abc").mkdir(parents=True)
+    (snap / "snapshots" / "abc" / "manifest.json").write_text("cached")
+    (snap / "refs").mkdir()
+    (snap / "refs" / RELEASE).write_text("abc")
+    fetch = ("upload.hf_manifest" if force else
+             "lambda r: hf_hub_download(upload.HF_REPO, 'manifest.json', repo_type='dataset', revision=r)")
+    code = ("from huggingface_hub import hf_hub_download\nfrom cancerbasemap import upload\n"
+            f"print(({fetch})('{RELEASE}'))")
+    env = {**os.environ, "HF_ENDPOINT": "http://127.0.0.1:9", "HF_HUB_CACHE": str(tmp_path / "cache")}
+    r = subprocess.run([sys.executable, "-I", "-c", code], env=env, capture_output=True, text=True)
+    if force:
+        assert r.returncode != 0 and "cannot reach Hugging Face" in r.stderr and "cached" not in r.stdout
+    else:
+        assert r.returncode == 0 and "snapshots/abc/manifest.json" in r.stdout

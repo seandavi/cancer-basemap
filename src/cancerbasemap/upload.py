@@ -6,16 +6,18 @@ so a pinned `v{release}/` keeps reading its own Parquet and `latest/` reads `lat
 gate.json and then manifest.json go last in each folder: manifest.json marks it complete.
 
 Refused before anything is written: a bundle without a gate.json for its manifest.json, one
-whose manifest.json is not the one at its Hugging Face tag (`hf-push` runs first, so nothing
+with a file not matching its manifest.json sha256, one whose manifest.json is not the one at its Hugging Face tag (`hf-push` runs first, so nothing
 on R2 lacks a permanent copy), and a finished dated folder of other files. Afterwards `v*/`
-folders are pruned by `select_keep`. Dry-run unless `apply`: everything is built and listed,
+folders are pruned by `select_keep`. latest/ loses its manifest.json before being overwritten. Dry-run unless `apply`: everything is built and listed,
 nothing is written to the bucket.
 """
 
 import hashlib
 import json
+import os
 import re
 import shutil
+import subprocess
 import tempfile
 import time
 from datetime import UTC, date, datetime
@@ -32,33 +34,43 @@ HF_REPO = "seandavis/cancerbasemap"
 DATED = re.compile(r"v\d{4}-\d{2}-\d{2}")
 MONTHS = 12  # calendar months of releases kept (ADR-0001 § R2)
 GRACE_DAYS = 7  # a replaced release stays this long after its same-month successor
+PROJECT = "cdsci-infra"
+# R2 credentials, as biocOnIce's: env var if set, else this GSM secret in PROJECT.
+R2_SECRETS = {"CU_OPENALEX_R2_ACCOUNT_ID": "cdsci-r2-account-id",
+              "CU_OPENALEX_R2_ACCESS_KEY_ID": "cdsci-r2-access-key-id",
+              "CU_OPENALEX_R2_SECRET_ACCESS_KEY": "cdsci-r2-secret-access-key"}
+
+
+def _secret(env, name):
+    """The env var `env` if set, else GSM secret `name` in PROJECT (via gcloud). Never printed."""
+    return os.environ.get(env) or subprocess.run(
+        ["gcloud", "secrets", "versions", "access", "latest", f"--secret={name}",
+         f"--project={PROJECT}"], capture_output=True, text=True, check=True).stdout.strip()
 
 
 def r2_filesystem():
-    """pyarrow's S3 client on the cdsci R2 account, credentials as cdsci-lake resolves them.
-
-    Each of CU_OPENALEX_R2_ACCOUNT_ID / _R2_ACCESS_KEY_ID / _R2_SECRET_ACCESS_KEY (env or
-    .env) if set, else its cdsci-r2-* secret in GSM project cdsci-infra.
-    """
-    from cdsci.lake.config import get_settings
-    from cdsci.lake.secrets import get_secret
-
-    s = get_settings()
-    account = s.r2_account_id or get_secret(s.r2_account_id_secret, s.gsm_project)
-    return pafs.S3FileSystem(
-        access_key=s.r2_access_key_id or get_secret(s.r2_access_key_secret, s.gsm_project),
-        secret_key=s.r2_secret_access_key or get_secret(s.r2_secret_key_secret, s.gsm_project),
-        endpoint_override=f"{account}.r2.cloudflarestorage.com", region="auto")
+    """pyarrow's S3 client on the cdsci R2 account (credentials as `_secret` resolves them)."""
+    account, key, secret = (_secret(env, name) for env, name in R2_SECRETS.items())
+    return pafs.S3FileSystem(access_key=key, secret_key=secret,
+                             endpoint_override=f"{account}.r2.cloudflarestorage.com", region="auto")
 
 
 def hf_manifest(release):
-    """manifest.json bytes at the Hugging Face tag `release`, or None when the tag does not exist."""
+    """manifest.json bytes at the Hugging Face tag `release`, or None when the tag does not exist.
+
+    Always fetched from the Hub, never from the local cache: an unreachable Hub refuses the upload.
+    """
     from huggingface_hub import hf_hub_download
-    from huggingface_hub.errors import EntryNotFoundError, RepositoryNotFoundError, RevisionNotFoundError
+    from huggingface_hub.errors import (EntryNotFoundError, LocalEntryNotFoundError,
+                                        RepositoryNotFoundError, RevisionNotFoundError)
 
     try:
         return Path(hf_hub_download(HF_REPO, "manifest.json", repo_type="dataset",
-                                    revision=release)).read_bytes()
+                                    revision=release, force_download=True)).read_bytes()
+    # LocalEntryNotFoundError subclasses EntryNotFoundError, and a failed forced download is a
+    # ValueError: both mean no network, not no tag.
+    except (LocalEntryNotFoundError, ValueError) as e:
+        raise SystemExit(f"cannot reach Hugging Face to check {HF_REPO}@{release}: {e}") from e
     except (EntryNotFoundError, RepositoryNotFoundError, RevisionNotFoundError):
         return None
 
@@ -89,6 +101,13 @@ def _put(fs, local, key, apply, attempts=3):
 def _folder(fs, root, bundle, manifest, folder, apply):
     """Upload the bundle into `root/folder/`, with its SQL, DuckDB and manifest for that URL."""
     base = f"{PUBLIC_URL}/{folder}"
+    # latest/ is replaced in place: drop its manifest.json (the completeness marker) before
+    # overwriting anything, so an interrupted replacement never looks complete.
+    stale = f"{root}/{folder}/manifest.json"
+    if folder == "latest" and fs.get_file_info(stale).type != pafs.FileType.NotFound:
+        print(f"delete {stale}", flush=True)
+        if apply:
+            fs.delete_file(stale)
     # ponytail: latest/ gets a second upload from the local bundle, not a server-side copy
     # of v{release}/: R2 times out / 502s copying multi-GB objects (omicidx parquet_export).
     for t in manifest["tables"]:
@@ -113,13 +132,14 @@ def _dated(name):
         return False
 
 
-def select_keep(dated_folders, current, today: date):
-    """The `v{date}` names to keep out of `dated_folders` (`current`, being uploaded, counted).
+def select_keep(complete_folders, current, today: date):
+    """The `v{date}` names to keep out of `complete_folders` (those with a manifest.json),
+    `current`, being uploaded, counted.
 
     The newest of each of the MONTHS newest calendar months that have a release; any other
     whose same-month successor is under GRACE_DAYS old (UTC days); and `current`, always.
     """
-    names = sorted({n for n in (*dated_folders, current) if _dated(n)})
+    names = sorted({n for n in (*complete_folders, current) if _dated(n)})
     by_month: dict[str, list[str]] = {}
     for n in names:
         by_month.setdefault(n[1:8], []).append(n)
@@ -134,10 +154,19 @@ def select_keep(dated_folders, current, today: date):
 
 
 def _expired(fs, root, current, today):
-    """`v{date}` folders under `root` that `select_keep` does not keep; `current` never is."""
+    """`v{date}` folders under `root` to delete; `current` never is.
+
+    Only completed folders (with a manifest.json) are retention candidates, so an interrupted
+    upload never stands in for a complete release. Incomplete ones older than `current` are
+    pruned outright: nothing pins them and a retry of that release would be re-uploaded whole.
+    Incomplete ones newer than `current` are left alone.
+    """
     names = {i.base_name for i in fs.get_file_info(pafs.FileSelector(root))
-             if i.type == pafs.FileType.Directory}
-    return sorted(n for n in names if _dated(n) and n not in select_keep(names, current, today))
+             if i.type == pafs.FileType.Directory and _dated(i.base_name)}
+    complete = {n for n in names
+                if fs.get_file_info(f"{root}/{n}/manifest.json").type != pafs.FileType.NotFound}
+    keep = select_keep(complete, current, today)
+    return sorted(n for n in names if n not in keep and (n in complete or n < current))
 
 
 def _files(manifest):
@@ -154,6 +183,15 @@ def _check_gate(bundle, manifest_bytes):
     if gate.get("manifest_sha256") != hashlib.sha256(manifest_bytes).hexdigest():
         raise SystemExit(f"{bundle}/{GATE_FILE} is for another manifest.json; "
                          "re-run `cancerbasemap gate` on this bundle")
+
+
+def _check_files(bundle, manifest):
+    """gate.json binds manifest.json, not the Parquet: rehash every file against its sha256, streamed."""
+    for t in manifest["tables"]:
+        with (bundle / t["path"]).open("rb") as f:
+            if hashlib.file_digest(f, "sha256").hexdigest() != t["sha256"]:
+                raise SystemExit(f"{bundle}/{t['path']} does not match its manifest.json "
+                                 "sha256; re-publish and re-gate this bundle")
 
 
 def _check_hf(release, manifest_bytes, get_hf_manifest):
@@ -174,6 +212,7 @@ def upload(bundle: Path, fs, root=BUCKET, apply=False, today=None, get_hf_manife
     manifest_bytes = (bundle / "manifest.json").read_bytes()
     manifest = json.loads(manifest_bytes)
     _check_gate(bundle, manifest_bytes)
+    _check_files(bundle, manifest)
     if get_hf_manifest is not None:  # None only for a dry run (`--skip-hf-check`)
         _check_hf(manifest["release"], manifest_bytes, get_hf_manifest)
     dated = f"v{manifest['release']}"
