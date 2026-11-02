@@ -93,7 +93,7 @@ def test_selects_drop_history_only_for_type_2_tables():
         assert ("EXCLUDE (valid_from, valid_to)" in sql[name]) == type2
     assert {n for n, q in sql.items() if "valid_to" in q} == {
         "geography.unit", "geography.alias", "measure.observation", "measure.cancer_site",
-        "measure.cancer_site_group", "facility.site"}
+        "measure.cancer_site_group", "facility.site", "catchment.center", "catchment.member"}
 
 
 def test_a_non_empty_output_directory_is_refused(con, tmp_path):

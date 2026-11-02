@@ -82,7 +82,7 @@ What exists, what it does well, and where Cancer Basemap sits. Surveyed Septembe
 | Resource | What it is | Strength | Gap Cancer Basemap fills |
 | --- | --- | --- | --- |
 | **Cancer InFocus / CIFTools** (UK Markey) | Data gatherer (county list in → standardized files out) + Shiny app; code under a no-cost licence; downloads at CancerInFocus.org | The de facto standard: all NCI-designated centers covered, 35 licensed adopters by Oct 2024; community around the CARDS group and the Catchment Area Data Conference | Snapshot files, no history; not queryable across centers; its county incidence comes from the USCS Incidence Analytic Dataset through special access, which a public lake cannot republish |
-| **NCI GIS Portal** (Cancer Atlas, catchment-area viewer, data-source index) | NCI's geospatial hub | Authoritative; its data-source index is a good candidate list | Visualization-first; catchment viewer is not downloadable |
+| **NCI GIS Portal** (Cancer Atlas, catchment-area viewer, data-source index) | NCI's geospatial hub | Authoritative; its data-source index is a good candidate list | Visualization-first; the catchment shapefile is downloadable and is landed whole (#195) |
 | **State Cancer Profiles** | NCI/CDC county/state incidence, mortality, screening, risk, demographics | The canonical public county cancer burden source | No API, no bulk, no archive — already filled by `state-cancer-profile-scraper` and its Zenodo vintages |
 | **County Health Rankings & Roadmaps** | Annual county health measures; now on Zenodo 2010–2025 with an R client | Versioned releases, programmatic access | Single source; not joined to cancer or catchments |
 | **NaNDA** (U Michigan / ICPSR) | Tract/ZCTA/county contextual measures, 1981– | Broad, theory-derived, long time series | ICPSR distribution terms — a pointer target, not a copy |
@@ -401,16 +401,35 @@ source.
 
 ### catchment.center
 
-NCI-designated centers (and others that opt in): id, name, designation type,
-designation dates.
+One row per declared catchment: `center_id`, `source` (business key),
+`name`, `designation_type`, `state`, `geo_description`, `address`, `url`,
+`notes`. For `NCI_OCC`, `center_id` is the shapefile `ID` — one per polygon, so
+a multi-site center (Mayo Clinic) has several.
 
 ### catchment.member
 
 ```
 center_id, geo_id, geo_vintage
 declared_by          -- 'NCI_OCC' | 'CENTER_PR' | 'PUBLISHED_PAPER'
+overlap_fraction     -- share of the county's area inside the catchment, 0-1
 valid_from, valid_to
 ```
+
+`geo_id` is `county:<5-digit FIPS>`, matching `geography.unit` — except the 10
+American Samoa, Guam and Northern Mariana Islands county-equivalents under
+Hawai'i's catchment, which `geography.unit` does not carry yet (#203), so those members do not join until it lands them.
+Membership is a county, not a tract, and may be partial: `overlap_fraction` is 1.0 for a whole
+county and the true share where a catchment cuts one (Memorial Sloan Kettering,
+Norris). A county is a member only at `overlap_fraction >= 0.01`.
+
+First declarer, `NCI_OCC` (#195): NCI's catchment shapefile
+(<https://gis.cancer.gov/ncicatchment/>), a U.S. Government work, cleared with
+attribution (NCI; cite DelNero et al., CEBP 2022, doi:10.1158/1055-9965.EPI-21-1230).
+It is republished whole — all 69 records and the geometry as WKB — as
+`raw.nci__catchment_areas`; NCI publishes polygons, not county lists, so
+`catchment.member` is derived by overlaying them on Census 2020 counties
+(`geo_vintage` 2020). The Census county file is a transient input recorded in
+`provenance.release`, not landed.
 
 Catchment definitions are self-declared by centers and change. Proposed
 mechanism, mirroring the federation registry: a `catchments.yaml` in the repo,
@@ -572,8 +591,9 @@ cancer-site ↔ MONDO bridge exercised from biocOnIce; federation registry entry
 
 # Open questions
 
-- **Catchment definitions.** Is there a redistributable national source, or is
-  PR-by-center the only honest route?
+- **Catchment definitions.** NCI's catchment shapefile is the national source
+  (#195); centers whose catchment differs from NCI's, or non-designated centers,
+  still need a PR-by-center route.
 - **Geometry.** Iceberg v3 has native geometry types; is client support
   (DuckDB spatial over Iceberg) good enough to store geometry in-table, or do
   GeoParquet/PMTiles pointers stay the default?

@@ -37,6 +37,7 @@ CLI_SUBCOMMAND = {
     "fda_mqsa": "mqsa",
     "epa_sdwis": "sdwis",
     "census_acs": "acs",
+    "nci_catchment": "nci-catchment",
 }
 
 SRC_DIR = Path("../src/cancerbasemap")
