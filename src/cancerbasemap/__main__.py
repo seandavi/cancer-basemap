@@ -2,7 +2,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from . import catalog, census_gazetteer, gate, merge, publish, schemas
+from . import catalog, census_gazetteer, gate, merge, publish, schemas, upload
 
 
 def _print(counts):
@@ -49,6 +49,14 @@ def main():
     hp.add_argument("--apply", action="store_true",
                     help="create the repo if needed and push (default: print the plan)")
     hp.add_argument("--repo", help="dataset repo (default: seandavis/cancerbasemap)")
+
+    # core: R2 upload (ADR-0001, #173)
+    up = sub.add_parser("upload", help="put a gated bundle on R2 as v{release}/ and latest/, "
+                        "then prune to the 12-month window; dry run unless --apply")
+    up.add_argument("bundle", help="directory written by `publish` and passed by `gate`")
+    up.add_argument("--apply", action="store_true", help="write to the bucket (default: dry run)")
+    up.add_argument("--skip-hf-check", action="store_true",
+                    help="dry run only: skip the Hugging Face tag check")
 
     # --- raw: census gazetteer ---
     gz = sub.add_parser("gazetteer", help="land one Census Gazetteer vintage's county + "
@@ -311,6 +319,12 @@ def main():
         return
     if args.cmd == "gate":
         sys.exit(not gate.gate(Path(args.bundle), None if args.reference == "none" else args.reference))
+    if args.cmd == "upload":
+        if args.skip_hf_check and args.apply:
+            p.error("--skip-hf-check is for dry runs; --apply always checks the Hugging Face tag")
+        upload.upload(Path(args.bundle), upload.r2_filesystem(), apply=args.apply,
+                      get_hf_manifest=None if args.skip_hf_check else upload.hf_manifest)
+        return
 
     if args.cmd == "hf-push":
         from huggingface_hub import HfApi
