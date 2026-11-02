@@ -83,9 +83,9 @@ test("HEAD has no body: directory listing and object", async () => {
   assert.equal(obj.headers.get("content-length"), "10");
 });
 
-test("HEAD ignores Range: 200 for the whole object", async () => {
-  const res = await get("/data/latest/a.parquet", { range: "bytes=2-4" }, "HEAD");
-  assert.equal(res.status, 200);
-  assert.equal(res.headers.get("content-length"), "10");
-  assert.equal(res.headers.get("content-range"), null);
+test("HEAD with Range: 206 + Content-Range, no body (DuckDB-Wasm needs it)", async () => {
+  const res = await get("/data/latest/a.parquet", { range: "bytes=0-0" }, "HEAD");
+  assert.equal(res.status, 206);
+  assert.equal(res.headers.get("content-range"), "bytes 0-0/10");
+  assert.equal(res.body, null);
 });

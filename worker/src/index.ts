@@ -69,8 +69,10 @@ const handler = {
 
     // Check if this is a range request — we need the object size first
     // to parse the range, so do a head-style get first if range is present.
-    // Range applies to GET only (RFC 9110 §14.2): a HEAD answers for the whole object.
-    const rangeHeader = request.method === "GET" ? request.headers.get("range") : null;
+    // HEAD honours Range too (206 + Content-Range, no body), as omicidx's Worker does:
+    // DuckDB-Wasm sends HEAD with a Range header and refuses to open a remote file
+    // without Content-Range. RFC 9110 lets a server ignore Range on HEAD; we don't.
+    const rangeHeader = request.headers.get("range");
 
     // Build R2GetOptions
     const onlyIf = conditionalHeaders(request.headers);
