@@ -102,3 +102,13 @@ ORDER BY n DESC;
 SELECT release, published_at, git_sha
 FROM read_json('https://basemap.cancerdatasci.org/data/latest/manifest.json');
 ```
+
+```sql
+-- What each release was built from: one row per release, one column per
+-- source, each cell that source's own version string
+PIVOT provenance.release
+ON source
+USING first(source_version)
+GROUP BY release
+ORDER BY release;
+```

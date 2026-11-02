@@ -34,9 +34,6 @@ website:
       - text: Playground
         href: playground.qmd
     right:
-      - text: "Explorer ↗"
-        href: https://canceronice-explorer.seandavi.workers.dev
-        target: _blank
       - icon: github
         aria-label: GitHub repository
         href: https://github.com/seandavi/cancer-basemap
@@ -97,8 +94,7 @@ format:
     include-in-header:
       text: |
         <!-- DuckDB-WASM's browser build imports the bare specifier "apache-arrow",
-             which only resolves via an import map (see explorer/public/index.html for
-             the same fix) — and an import map must be present before any module
+             which only resolves via an import map — and an import map must be present before any module
              script on the page runs, hence this lives in <head> via include-in-header
              rather than in an {ojs} cell. See cancer-basemap#119. -->
         <script type="importmap">

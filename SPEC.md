@@ -7,7 +7,7 @@
 ## Names
 
 **Cancer Basemap** is the product name — repository, papers, CARDS talks, grant
-narratives, the explorer's title. A basemap is the common reference layer a map
+narratives. A basemap is the common reference layer a map
 is drawn on, which is what this is under catchment dashboards such as Cancer
 InFocus. The Python package and CLI are `cancerbasemap` (`basemap` on PyPI is
 matplotlib's toolkit). The earlier names, "cancerOnIce" and "Catchment Lake",
@@ -516,7 +516,7 @@ composites. Derived indices are writers like any other (`source = 'CANCERONICE'`
 
 # Recipes
 
-Shipped in the explorer and the MCP server, as in biocOnIce:
+Shipped as site recipe pages and in the MCP server, as in biocOnIce:
 
 1. **Catchment burden table** — for a center, every cancer measure over its
    catchment geographies, with source, release and interval, as of a named
