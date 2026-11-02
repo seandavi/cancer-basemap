@@ -17,7 +17,7 @@ from pyiceberg.partitioning import PartitionField, PartitionSpec
 from pyiceberg.schema import Schema
 from pyiceberg.table import TableProperties
 from pyiceberg.transforms import IdentityTransform
-from pyiceberg.types import DoubleType, IntegerType, NestedField, StringType
+from pyiceberg.types import BinaryType, DoubleType, IntegerType, NestedField, StringType
 
 # DuckDB's own default row-group size (issue #120). Sorted data plus a row
 # group this small is what makes a one-measure, one-state query decode one or
@@ -5585,6 +5585,114 @@ TABLES = {
                 "landed verbatim and whole -- the source of facility.site's county FIPS for "
                 "EPA_SUPERFUND, joined to raw.superfund__npl_status on the shared EPA site id "
                 "(epa_superfund.py module docstring). Public domain -- 17 U.S.C. § 105.",
+    ),
+    # --- raw + derived: nci catchment areas ---
+    # NCI-designated cancer centers' catchment areas and the counties they cover
+    # (#195). nci_catchment.py.
+    "raw.nci__catchment_areas": TableDef(
+        schema=Schema(
+            NestedField(1, "name", StringType(), required=True,
+                        doc="Catchment name as published (the center's name; NOT unique -- Mayo "
+                            "Clinic appears three times, once per site). The two summary rows "
+                            "'Total US Stat' and 'All Catchment Areas Stat' are kept here and "
+                            "have no geometry. Source: National Cancer Institute, GIS Portal for "
+                            "Cancer Research (https://gis.cancer.gov/ncicatchment/). Cite "
+                            "DelNero PF, et al., Cancer Epidemiol Biomarkers Prev 2022;31(5):"
+                            "965-71, doi:10.1158/1055-9965.EPI-21-1230."),
+            NestedField(2, "ID", StringType(), required=True,
+                        doc="NCI's catchment id, the dBASE integer as text. Unique per polygon "
+                            "(not per center, not contiguous); the key."),
+            NestedField(3, "type", StringType(), doc="Designation: 'Comprehensive Cancer Center' "
+                        "or 'Cancer Center'. NULL on the summary rows."),
+            NestedField(4, "address", StringType(),
+                        doc="Center street address as published, embedded line breaks kept."),
+            NestedField(5, "state", StringType(), doc="State name as published (e.g. 'Washington D.C.')."),
+            NestedField(6, "GeoDesc", StringType(),
+                        doc="NCI's geographic description: Full-State | Sub-State | Inter-State | "
+                            "Multi-State | Full-Inter-State."),
+            NestedField(7, "url", StringType(), doc="Center web address as published."),
+            NestedField(8, "draworder", StringType(),
+                        doc="Portal map drawing order, as text; display only."),
+            NestedField(9, "geometry_wkb", BinaryType(),
+                        doc="The catchment polygon as OGC well-known binary, in the shapefile's "
+                            "own CRS (see geometry_crs). NULL on the two summary rows. Republished "
+                            "from NCI_Catchment_Areas_*.zip; boundaries are center-submitted "
+                            "definitions plus Census TIGER, so some are partial counties."),
+            NestedField(10, "geometry_crs", StringType(), required=True,
+                        doc="CRS of geometry_wkb as DuckDB spatial reads it from the shapefile's "
+                            ".prj, e.g. 'EPSG:4326'."),
+            NestedField(11, "source_version", StringType(), required=True,
+                        doc="The zip's HTTP Last-Modified date (ISO), the version axis for this "
+                            "source. Raw is replaced wholesale per value of this column."),
+            NestedField(12, "landed_in", StringType(), required=True,
+                        doc="The Cancer Basemap release whose ingest landed these rows."),
+        ),
+        sort_by=("source_version", "ID"),
+        comment="NCI-designated cancer center catchment areas landed whole, geometry included "
+                "(WKB), one row per shapefile record (69, incl. two summary rows). Source: National "
+                "Cancer Institute, GIS Portal for Cancer Research; cite DelNero et al., CEBP 2022, "
+                "doi:10.1158/1055-9965.EPI-21-1230. A U.S. Government work (17 U.S.C. § 105); "
+                "licence cleared by the owner (#195).",
+    ),
+
+    "catchment.center": TableDef(
+        schema=Schema(
+            NestedField(1, "center_id", StringType(), required=True,
+                        doc="The declaring source's id for the catchment; for NCI_OCC the "
+                            "shapefile ID. One per polygon, so a center with several sites "
+                            "(Mayo Clinic: three) has several ids. Part of the business key."),
+            NestedField(2, "source", StringType(), required=True,
+                        doc="Who declared the catchment, e.g. 'NCI_OCC' (NCI Office of Cancer "
+                            "Centers' catchment map). Part of the business key and of the "
+                            "writer's merge scope."),
+            NestedField(3, "name", StringType(), required=True, doc="Center name as published."),
+            NestedField(4, "designation_type", StringType(),
+                        doc="'Comprehensive Cancer Center' | 'Cancer Center'."),
+            NestedField(5, "state", StringType(), doc="Center's state, as published."),
+            NestedField(6, "geo_description", StringType(),
+                        doc="NCI's description of the catchment's reach: Full-State | Sub-State | "
+                            "Inter-State | Multi-State | Full-Inter-State."),
+            NestedField(7, "address", StringType(), doc="Center address on one line."),
+            NestedField(8, "url", StringType(), doc="Center web address."),
+            NestedField(9, "notes", StringType(),
+                        doc="Caveats on the catchment's membership, or NULL."),
+            NestedField(10, "valid_from", StringType(), required=True, doc=VALID_FROM),
+            NestedField(11, "valid_to", StringType(), doc=VALID_TO),
+        ),
+        business_key=("center_id", "source"),
+        sort_by=("source", "center_id"),
+        comment="Cancer centers and the catchments they claim (SPEC.md § Catchment). First writer: "
+                "NCI_OCC, from raw.nci__catchment_areas. Source: National Cancer Institute; cite "
+                "DelNero et al., CEBP 2022, doi:10.1158/1055-9965.EPI-21-1230.",
+    ),
+
+    "catchment.member": TableDef(
+        schema=Schema(
+            NestedField(1, "center_id", StringType(), required=True,
+                        doc="FK catchment.center (with declared_by = center.source)."),
+            NestedField(2, "geo_id", StringType(), required=True,
+                        doc="FK geography.unit: 'county:<5-digit FIPS>'."),
+            NestedField(3, "geo_vintage", IntegerType(), required=True,
+                        doc="FK geography.unit's vintage: 2020 -- the Census 2020 county file the "
+                            "portal ships, Connecticut as its eight legacy counties."),
+            NestedField(4, "declared_by", StringType(), required=True,
+                        doc="Who declared membership: 'NCI_OCC' | 'CENTER_PR' | 'PUBLISHED_PAPER'. "
+                            "NCI_OCC membership is derived here by overlaying NCI's catchment "
+                            "polygon on Census cb_2020_us_county_500k (NCI publishes polygons, "
+                            "not county lists)."),
+            NestedField(5, "overlap_fraction", DoubleType(),
+                        doc="Share of the county's area inside the catchment, 0-1 (equal-area "
+                            "EPSG:5070). 1.0 for a whole county; below 1 where the catchment cuts "
+                            "a county (e.g. Memorial Sloan Kettering's circle; Norris covers 43% "
+                            "of Orange County, CA). A county is a member only if this is >= 0.01."),
+            NestedField(6, "valid_from", StringType(), required=True, doc=VALID_FROM),
+            NestedField(7, "valid_to", StringType(), doc=VALID_TO),
+        ),
+        business_key=("center_id", "geo_id", "geo_vintage", "declared_by"),
+        sort_by=("declared_by", "center_id", "geo_id"),
+        comment="The counties each catchment claims (SPEC.md § Catchment): one row per "
+                "(center, county) with overlap_fraction. First writer: NCI_OCC. Source: National "
+                "Cancer Institute; cite DelNero et al., CEBP 2022, doi:10.1158/1055-9965.EPI-21-1230.",
     ),
 }
 def is_rate_limit(err):

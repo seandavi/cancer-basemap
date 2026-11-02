@@ -312,6 +312,19 @@ def main():
     sf.add_argument("--retrieved-on", dest="retrieved_on",
                     help="ISO date to record as the version (default: today)")
 
+    # --- raw: nci catchment areas ---
+    # NCI cancer center catchment areas, shapefile republished whole (#195).
+    from . import nci_catchment
+    nc = sub.add_parser("nci-catchment", help="land the NCI catchment-area shapefile whole, then "
+                        "derive catchment.center and catchment.member")
+    nc.add_argument("--release", required=True, help="Cancer Basemap release, e.g. 2026.09")
+    nc.add_argument("--url", help="an already-downloaded catchment shapefile zip or alternate URL")
+    nc.add_argument("--counties-url", dest="counties_url",
+                    help="an already-downloaded Census cb_2020_us_county_500k zip or alternate URL")
+    nc.add_argument("--retrieved-on", dest="retrieved_on",
+                    help="ISO date to record as the version when the server sends no "
+                         "Last-Modified (default: today)")
+
     args = p.parse_args()
 
     if args.cmd == "publish":
@@ -474,6 +487,11 @@ def main():
     # EPA Superfund National Priorities List sites (#99); extends facility.site with kind='superfund'.
     elif args.cmd == "superfund":
         _print(epa_superfund.ingest(cat, args.release, args.status_url, args.frs_url, args.retrieved_on))
+
+    # --- raw: nci catchment areas ---
+    # NCI cancer center catchment areas, shapefile republished whole (#195).
+    elif args.cmd == "nci-catchment":
+        _print(nci_catchment.ingest(cat, args.release, args.url, args.counties_url, args.retrieved_on))
 
     else:
         for ns in cat.list_namespaces():
