@@ -114,6 +114,47 @@ journalctl --user -u cancerbasemap-snapshots -n 50
 Not scheduled yet: the monthly "is there a new edition?" check for release-axis
 sources, and BLS LAUS / SDWIS refreshes (#94, #53).
 
+## Monthly release (#179)
+
+[ADR-0001](adr/0001-public-releases-monthly-parquet-bundles.md) § Cadence: on the 1st
+of the month, 00:00 UTC, `cancerbasemap-release.timer` runs `systemd/release.sh`:
+publish → gate (against `latest/`) → `hf-push --apply` → `upload` dry run →
+`upload --apply`, stopping at the first failure, then deleting the local bundle. It is
+built in `/data/davsean/tmp/cancerbasemap-release-<UTC date>/` (`/tmp` is small and
+noexec). No credentials are configured: publish reads the catalog anonymously, and
+gate, hf-push and upload fetch theirs from GSM through `gcloud`, so the gcloud login
+on onclappc02 must be current. The unit runs the checkout at
+`~/Documents/git/cancer-on-ice`, whatever is checked out there: keep it on an
+up-to-date `main`.
+
+```sh
+cp systemd/cancerbasemap-release.{service,timer} ~/.config/systemd/user/   # re-copy on change
+systemctl --user daemon-reload
+systemctl --user start ntfy-notify@cancerbasemap-release.service   # test alert reaches cdsci-lake-ops
+systemctl --user start cancerbasemap-release.service    # one real run by hand, first
+journalctl --user -u cancerbasemap-release -f
+systemctl --user enable --now cancerbasemap-release.timer
+systemctl --user list-timers cancerbasemap-release.timer   # next: the 1st, 00:00 UTC
+```
+
+Start the service by hand before trusting the timer: `systemd-analyze --user verify`
+passes a unit whose `ExecStart=` is wrong. That run also times the steps; tighten
+`TimeoutStartSec=` from the journal.
+
+**Logs**: the journal, which vector ships to ClickHouse (`systemd_user_jobs`, monode).
+**Failure**: `OnFailure=ntfy-notify@%N.service` posts to the `cdsci-lake-ops` ntfy
+topic. The notifier uses the same gcloud login, so an expired login fails the release
+*and* silences its alert; a missing alert is not a clean run. Check `systemctl --user
+status cancerbasemap-release.service`.
+
+**When the gate fails**, nothing was archived or uploaded. Read the report in the
+journal. If the data is at fault, fix it, delete the bundle directory so the re-run
+rebuilds it, and `systemctl --user start cancerbasemap-release.service`. If a required
+check is wrong, fix the gate through a PR. Re-runs the same day reuse a complete bundle
+(so `hf-push` sees the manifest already tagged); other failures (network, R2, Hugging
+Face) are fixed by simply re-running. A re-run after `latest/` became today's release
+fails the gate ("not older"): the release is already out.
+
 ## Table layout (#120)
 
 Every table declares a `sort_by` (`schemas.TableDef`), and `merge.overwrite`

@@ -1,0 +1,13 @@
+[Unit]
+Description=Monthly Cancer Basemap release (ADR-0001)
+Documentation=https://github.com/seandavi/cancer-basemap/issues/179
+
+[Timer]
+# The 1st, 00:00 UTC. The host is America/Denver, so UTC is explicit. No jitter: a release
+# is dated by its UTC day.
+OnCalendar=*-*-01 00:00:00 UTC
+# A missed 1st (box off) runs on next boot, dated that day.
+Persistent=true
+
+[Install]
+WantedBy=timers.target
