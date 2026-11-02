@@ -50,7 +50,7 @@ retryButton = {
 
 ```{ojs}
 //| echo: false
-// Loads the SAME pinned duckdb-wasm build the explorer app uses (Quarto's
+// Loads a pinned duckdb-wasm build (Quarto's
 // own OJS stdlib DuckDBClient is an older bundled client that cannot ATTACH
 // an Iceberg REST catalog). Depends only on dbGeneration, so it runs once
 // per page load and again only on Retry.
