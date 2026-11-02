@@ -41,6 +41,15 @@ def main():
                     help="base URL of the release to compare with (default: %(default)s), "
                          "or 'none' for the bundle checks only")
 
+    # core: Hugging Face archive (ADR-0001, #174)
+    hp = sub.add_parser("hf-push", help="push a gated release bundle to Hugging Face as one "
+                        "commit tagged with its release date; does nothing if the tag holds the "
+                        "same manifest.json, fails if it holds another (dry run unless --apply)")
+    hp.add_argument("bundle", help="directory that passed `gate` (has gate.json)")
+    hp.add_argument("--apply", action="store_true",
+                    help="create the repo if needed and push (default: print the plan)")
+    hp.add_argument("--repo", help="dataset repo (default: seandavis/cancerbasemap)")
+
     # --- raw: census gazetteer ---
     gz = sub.add_parser("gazetteer", help="land one Census Gazetteer vintage's county + "
                         "tract files, then derive geography.unit")
@@ -302,6 +311,14 @@ def main():
         return
     if args.cmd == "gate":
         sys.exit(not gate.gate(Path(args.bundle), None if args.reference == "none" else args.reference))
+
+    if args.cmd == "hf-push":
+        from huggingface_hub import HfApi
+
+        from . import hf
+        hf.hf_push(Path(args.bundle), HfApi(token=hf.hf_token()), args.repo or hf.REPO,
+                   apply=args.apply)
+        return
 
     cat = catalog()
     if args.cmd == "init":
