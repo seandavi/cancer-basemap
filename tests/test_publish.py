@@ -116,3 +116,25 @@ def test_views_keep_the_https_url_before_it_is_uploaded(con, tmp_path):
 def test_unknown_table_is_refused(con, tmp_path):
     with pytest.raises(ValueError, match="not a published table"):
         publish.publish(con, tmp_path, tmp_path.as_uri(), ["geography.nope"])
+
+
+def test_observation_is_written_clustered_by_geography_level_and_state(tmp_path):
+    c = duckdb.connect()
+    c.execute("ATTACH ':memory:' AS coi")
+    c.execute("CREATE SCHEMA coi.measure")
+    c.execute("CREATE SCHEMA coi.provenance")
+    c.execute("CREATE TABLE coi.provenance.release (release VARCHAR)")
+    c.execute("CREATE TABLE coi.measure.observation (source VARCHAR, source_release VARCHAR, measure_id VARCHAR, "
+              "geo_id VARCHAR, value DOUBLE, valid_from VARCHAR, valid_to VARCHAR)")
+    c.execute("INSERT INTO coi.measure.observation VALUES "
+              "('B', '1', 'B:m', 'county:08001', 1, NULL, NULL), ('A', '1', 'A:m', 'tract:08001000100', 2, NULL, NULL), "
+              "('A', '1', 'A:m', 'county:12001', 3, NULL, NULL), ('A', '1', 'A:m', 'county:08003', 4, NULL, NULL), "
+              "('A', '1', 'A:m', 'nation:US', 5, NULL, NULL), ('A', '1', 'A:m', 'state:08', 6, NULL, NULL), "
+              "('A', '1', 'A:m', 'county:08001', 7, NULL, NULL), ('A', '1', 'A:old', 'county:08001', 8, NULL, 'closed')")
+    out = tmp_path / "release"
+    publish.publish(c, out, out.as_uri(), ["measure.observation"])
+
+    rows = duckdb.sql(f"SELECT source, geo_id, value FROM '{out / 'measure/observation.parquet'}'").fetchall()
+    assert rows == [("A", "county:08001", 7), ("A", "county:08003", 4), ("B", "county:08001", 1),
+                    ("A", "county:12001", 3), ("A", "nation:US", 5), ("A", "state:08", 6),
+                    ("A", "tract:08001000100", 2)]
