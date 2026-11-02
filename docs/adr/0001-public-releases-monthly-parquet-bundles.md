@@ -77,6 +77,19 @@ month; the push comes before the upload; and the retention rule below.
   recorded in `manifest.json`. `measure.observation`, the stack across sources, is the
   clearest case of product shape: it stays a SELECT, not a lake table, unless a second
   consumer asks for it.
+- **Layout.** `measure.observation` is written sorted by (geography level and state, `source`,
+  `source_release`, `measure_id`, `geo_id`), where the level and state are the first two
+  characters after the colon of `geo_id` (`county:08`, `tract:08`, `nation:US`), at DuckDB's default row
+  group size. The first release sorted by `(source_release, measure_id, geo_id)` in 247 row groups, so
+  the Catchment Profiles app (#206) read ~125 MB to draw one center: a few dozen counties of every
+  measure touch every row group. Replaying that app's eight queries for one 64-county center over
+  HTTP range reads against the 29.6M-row dev bundle: 46.7 MB read before, 8.1 MB after; under a
+  model of DuckDB-Wasm's 16 MB read-ahead (which gives 160 MB for the old file, near the observed
+  125) 59 MB after. The cost is a one-measure, all-counties query: 0.9 -> 5.2 MB read, 23 -> 42 MB
+  under the same model. Row groups of 16k or 4k rows did not help: the footer grows from 0.4 to 2.8
+  or 11 MB and requests multiply 3 to 12 times. Sorting by `source` first kept measure queries as
+  cheap as before but left a profile at 98 MB under the model. The Parquet path and columns are
+  unchanged. Numbers: #206.
 
 ### The gate
 

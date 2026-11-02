@@ -36,12 +36,26 @@ HISTORY_NOTE = " In the release bundle: current rows only, without valid_from / 
 EXCLUDED: dict[str, str] = {}
 
 
+# measure.observation is read in the browser by byte range, and a catchment profile wants a
+# few dozen geographies out of 30M rows. Sorting by geography level and state first puts one
+# state's counties and tracts in a few row groups, whose geo_id min/max then prune the rest;
+# the old (source_release, measure_id, geo_id) order scattered them over every row group of
+# every measure. Replaying one center's queries (#206): 47 MB -> 8 MB read natively, ~160 -> ~59
+# MB under a 16 MB read-ahead model. One-measure-all-counties reads 1 -> 5 MB. Smaller row
+# groups did not help: the footer grows and requests multiply (docs/adr/0001, Layout).
+ORDER_BY = {
+    "measure.observation": "left(geo_id, instr(geo_id, ':') + 2), source, source_release, measure_id, geo_id",
+}
+
+
 def _select(name, d):
     """Type-2 tables: current rows, validity columns dropped. Everything else: whole."""
     if any(f.name == "valid_to" for f in d.schema.fields):
-        return (f"SELECT * EXCLUDE ({', '.join(HISTORY_COLUMNS)}) FROM coi.{name} "
-                "WHERE valid_to IS NULL")
-    return f"SELECT * FROM coi.{name}"
+        sql = (f"SELECT * EXCLUDE ({', '.join(HISTORY_COLUMNS)}) FROM coi.{name} "
+               "WHERE valid_to IS NULL")
+    else:
+        sql = f"SELECT * FROM coi.{name}"
+    return f"{sql} ORDER BY {ORDER_BY[name]}" if name in ORDER_BY else sql
 
 
 TABLES = [(*name.split("."), _select(name, d)) for name, d in DECLARED.items()
