@@ -11,6 +11,9 @@ dependencies = [
     # publish.py serves http(s) reads from the bundle dir while building cancerbasemap.duckdb;
     # already installed by pyiceberg, declared because we import it.
     "fsspec",
+    # hf.py (ADR-0001 § Hugging Face): every gated release is one create_commit + tag, uploaded
+    # through Xet (hf-xet comes with it), as biocOnIce and omicidx do. Same pin.
+    "huggingface-hub>=2.2.0",
 ]
 
 [project.scripts]
