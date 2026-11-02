@@ -1,0 +1,19 @@
+[Unit]
+Description=Cancer Basemap monthly release: publish, gate, archive to Hugging Face, upload to R2 (ADR-0001, #179)
+Documentation=https://github.com/seandavi/cancer-basemap/issues/179
+After=network-online.target
+Wants=network-online.target
+OnFailure=ntfy-notify@%N.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/davsean/Documents/git/cancer-on-ice
+# The bundle is built under $TMPDIR/cancerbasemap-release-<date>/; /tmp on this host is
+# small and noexec. After a failed run /data's 7-day tmpfiles cleanup removes it.
+Environment=TMPDIR=/data/davsean/tmp
+ExecStart=/home/davsean/Documents/git/cancer-on-ice/systemd/release.sh
+# RuntimeMaxSec= has no effect on Type=oneshot. Bundle bytes and step times are not measured
+# yet (ADR-0001); 12 h is a ceiling to tighten from the journal after the first hand run,
+# well inside the monthly period.
+TimeoutStartSec=43200
+Nice=10
