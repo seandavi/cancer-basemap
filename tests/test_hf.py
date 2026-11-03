@@ -189,3 +189,43 @@ def test_cli_dry_run(gated, hub, monkeypatch, capsys):
     monkeypatch.setattr(sys, "argv", ["cancerbasemap", "hf-push", str(gated), "--repo", "me/scratch"])
     main()
     assert h.calls == [] and "dry run: would push me/scratch@2026-11-17" in capsys.readouterr().out
+
+
+def _hub_error(status):
+    from huggingface_hub.errors import HfHubHTTPError
+    req = httpx2.Request("POST", "https://huggingface.co/api/datasets/x/tag/abc123")
+    return HfHubHTTPError(f"{status}", response=httpx2.Response(status, request=req))
+
+
+def test_a_409_on_the_tag_right_after_the_commit_is_retried(gated, hub, monkeypatch):
+    """The Hub answered 409 to the tag of a commit it had just made (scheduled release
+    2026-11-03); the same call succeeded a minute later."""
+    h = hub()
+    tag = h.create_tag
+    fails = [_hub_error(409), _hub_error(409)]
+
+    def flaky(repo, **kw):
+        if fails:
+            h.calls.append(("create_tag", repo, kw))
+            raise fails.pop(0)
+        return tag(repo, **kw)
+
+    h.create_tag = flaky
+    monkeypatch.setattr(hf, "TAG_WAIT_S", 0)
+    hf.hf_push(gated, h, apply=True)
+    assert [c[0] for c in h.calls] == ["create_repo", "create_commit"] + ["create_tag"] * 3
+    assert "2026-11-17" in h.manifests
+
+
+def test_other_tag_errors_are_not_retried(gated, hub, monkeypatch):
+    h = hub()
+
+    def denied(repo, **kw):
+        h.calls.append(("create_tag", repo, kw))
+        raise _hub_error(403)
+
+    h.create_tag = denied
+    monkeypatch.setattr(hf, "TAG_WAIT_S", 0)
+    with pytest.raises(Exception):
+        hf.hf_push(gated, h, apply=True)
+    assert [c[0] for c in h.calls].count("create_tag") == 1

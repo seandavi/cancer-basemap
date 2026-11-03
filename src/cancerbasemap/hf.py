@@ -14,17 +14,19 @@ harmless; with a different one it fails. Tags are never deleted. DOIs are not mi
 import hashlib
 import json
 import os
+import time
 import subprocess
 from datetime import date
 from pathlib import Path
 
 from huggingface_hub import CommitOperationAdd, CommitOperationDelete
-from huggingface_hub.errors import RepositoryNotFoundError
+from huggingface_hub.errors import HfHubHTTPError, RepositoryNotFoundError
 
 from . import publish
 from .gate import GATE_FILE
 
 REPO = "seandavis/cancerbasemap"
+TAG_ATTEMPTS, TAG_WAIT_S = 5, 10
 TOKEN_SECRET = "cdsci-huggingface-token"
 TOKEN_PROJECT = "cdsci-infra"
 CODE_URL = "https://github.com/seandavi/cancer-basemap"
@@ -227,5 +229,14 @@ def hf_push(release: Path, api, repo=REPO, apply=False):
         print(f"dry run: would push {repo}@{tag}; nothing written; --apply to push")
         return
     commit = api.create_commit(repo, ops + deletes, repo_type="dataset", commit_message=message)
-    api.create_tag(repo, repo_type="dataset", tag=tag, revision=commit.oid, tag_message=message)
+    # The Hub can answer 409 Conflict to a tag on a commit it made a moment ago (the
+    # 2026-11-03 scheduled release failed here; the same call succeeded a minute later).
+    for attempt in range(TAG_ATTEMPTS):
+        try:
+            api.create_tag(repo, repo_type="dataset", tag=tag, revision=commit.oid, tag_message=message)
+            break
+        except HfHubHTTPError as e:
+            if getattr(e.response, "status_code", None) != 409 or attempt == TAG_ATTEMPTS - 1:
+                raise
+            time.sleep(TAG_WAIT_S * (attempt + 1))
     print(f"pushed {repo}@{tag} ({commit.oid})")
