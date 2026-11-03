@@ -105,11 +105,18 @@ def reference_checks(tables, ref_tables):
     return checks
 
 
+USER_AGENT = "cancerbasemap-gate (+https://github.com/seandavi/cancer-basemap)"
+
+
 def _reference_manifest(reference):
     """The reference's manifest.json, or None when no release is published there (404).
     Anything else, including a 200 that is not a manifest, raises."""
     try:
-        with urllib.request.urlopen(f"{reference.rstrip('/')}/manifest.json") as r:
+        # Cloudflare answers urllib's default User-Agent with 403 (error 1010) on
+        # cancerdatasci.org, so name ourselves (the 2026-11-03 release failed here).
+        req = urllib.request.Request(f"{reference.rstrip('/')}/manifest.json",
+                                     headers={"User-Agent": USER_AGENT})
+        with urllib.request.urlopen(req) as r:
             m = json.load(r)
     except urllib.error.HTTPError as e:
         if e.code == 404:

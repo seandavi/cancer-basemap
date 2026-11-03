@@ -32,4 +32,29 @@ cb upload "$dir"
 log "upload --apply"
 cb upload "$dir" --apply
 rm -rf "$dir"
-log "done; removed $dir"
+log "release done; removed $dir"
+
+# Rebuild and deploy the site, so the landing page's numbers describe the release just
+# published. Built in a throwaway worktree of origin/main so the checkout stays clean
+# (rendering rewrites site/_freeze/index). The docs venv lives outside $TMPDIR, which is
+# cleaned weekly; the coi-docs kernel the pages name is pointed at it each run. Only
+# index.qmd re-executes (quarto runs a document named on the command line even when
+# frozen); every other page renders from its committed freeze.
+docs=$HOME/.local/share/cancerbasemap/docs-venv
+quarto=$HOME/.local/opt/quarto-1.8.25/bin/quarto
+[ -x "$docs/bin/python" ] || "$HOME/.local/bin/uv" venv -q -p 3.12 "$docs"
+"$HOME/.local/bin/uv" pip install -q -p "$docs" jupyter_core jupyter_client nbclient nbformat ipykernel pyyaml duckdb
+"$docs/bin/python" -m ipykernel install --user --name coi-docs --display-name "Cancer Basemap docs" >/dev/null
+site=${TMPDIR}/cancerbasemap-site-$(date -u +%F)
+git fetch -q origin
+rm -rf "$site"; git worktree prune
+git worktree add -q --detach "$site" origin/main
+trap 'git worktree remove --force "$site" 2>/dev/null || true' EXIT
+log "render site in $site"
+( cd "$site" && export QUARTO_PYTHON="$docs/bin/python" PATH="$docs/bin:$PATH" \
+    && "$quarto" render site >/dev/null && "$quarto" render site/index.qmd >/dev/null )
+log "deploy site"
+# node/npx come from nvm, which a systemd unit's PATH does not include; use the newest.
+node_bin=$(ls -d "$HOME"/.nvm/versions/node/*/bin | sort -V | tail -1)
+( cd "$site/worker" && export PATH="$node_bin:$PATH" && npm ci --silent && npx wrangler deploy )
+log "site deployed"
