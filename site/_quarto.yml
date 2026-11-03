@@ -1,13 +1,23 @@
 project:
   type: website
   output-dir: _site
+  # social/ is the card generator (make_card.py, card.html), not site content.
+  render:
+    - "*.qmd"
+    - "!social/"
   resources:
     - shell-links.js
     - run-sql.js
+    - social-card.png
 
 website:
   title: "Cancer Basemap"
   site-url: https://basemap.cancerdatasci.org
+  description: "Public cancer data by county and tract, versioned by release: Parquet bundles and a browser SQL playground."
+  open-graph: true
+  twitter-card:
+    card-style: summary_large_image
+  image: social-card.png
   favicon: favicon.svg
   # The one GA4 property shared by every site.
   google-analytics: "G-KLLV1GCF4E"
