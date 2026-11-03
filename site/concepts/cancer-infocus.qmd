@@ -4,26 +4,25 @@ title: "Cancer Basemap and Cancer InFocus"
 
 Cancer InFocus (CIFTools, University of Kentucky Markey Cancer Center) is
 the de facto standard tool NCI-designated centers already use to describe
-their catchments — covering every designated center, with 35 licensed
+their catchments. It covers every designated center, with 35 licensed
 adopters as of October 2024 and an active community around the CARDS group
 and the Catchment Area Data Conference. Cancer Basemap is not trying to
 replace it.
 
-## Upstream, not a competitor
+## How the two projects relate
 
 Cancer InFocus gathers county-level data and produces standardized files and
 a Shiny app for a center's catchment; that's a strength this project doesn't
-try to duplicate. What Cancer Basemap adds is what a snapshot-file tool
-structurally can't do on its own: every release stays queryable, joins
-across sources happen in SQL rather than by hand, and the whole thing is
-reachable from R, Python, SQL, a browser, or an assistant — not only through
-one application.
+try to duplicate. What Cancer Basemap adds is a different kind of access:
+every release stays queryable, joins across sources happen in SQL rather
+than by hand, and the data is reachable from R, Python, SQL, a browser, or
+an assistant, not only through one application.
 
 The intended relationship: Cancer InFocus (or ECCO, or any center's own
 tool) reads *from* Cancer Basemap, the same way a downstream consumer reads from
 any published dataset. A recipe that writes CIFTools-shaped files for a
-chosen catchment is a better path to adoption than a rival dashboard, and
-the CARDS group is the audience this needs to reach before that recipe ships
+chosen catchment would fit that relationship better than a separate
+dashboard, and the CARDS group is the audience this needs to reach before that recipe ships
 ([SPEC.md § Recipes](https://github.com/seandavi/cancer-basemap/blob/main/SPEC.md#recipes)
 lists it as recipe 4, and open questions call out approaching the CIF team
 directly before milestone M2 closes).
@@ -31,20 +30,20 @@ directly before milestone M2 closes).
 ## What Cancer Basemap cannot carry
 
 Cancer InFocus's own county-level cancer *incidence* comes from the USCS
-Incidence Analytic Dataset through special access — a bilateral or
+Incidence Analytic Dataset through special access, a bilateral or
 Research-Data-Center arrangement between the requester and CDC/NCI, not a
-public redistribution licence. A public dataset structurally cannot republish
-that: the [licence gate](licence-gate.qmd) rules out anything that isn't
+public redistribution license. A public dataset structurally cannot republish
+that: the [license gate](license-gate.qmd) rules out anything that isn't
 redistributable by a third party, and special-access USCS incidence fails
 that test regardless of how the data would otherwise be used. What Cancer
 Basemap carries instead is State Cancer Profiles' own *published* county
-incidence and mortality rates — the same public route SCP itself uses, and
-the one Cancer Basemap keeps at every vintage rather than only the latest.
+incidence and mortality rates. That is the same public route SCP itself
+uses, and Cancer Basemap keeps it at every vintage rather than only the latest.
 
 The ACR (American College of Radiology) Lung Cancer Screening Registry
 facility locator is very likely proprietary and is not being pursued as a
-source (SPEC.md's own licence-gate table).
+source (SPEC.md's own license-gate table).
 
 No Cancer InFocus data values, coverage figures, or comparisons appear on
-this site — anything about what CIF itself contains belongs to CIF and its
+this site. Anything about what CIF itself contains belongs to CIF and its
 own documentation, not here.

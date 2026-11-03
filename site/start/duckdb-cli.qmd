@@ -3,7 +3,7 @@ title: "DuckDB CLI"
 ---
 
 No install beyond the [`duckdb`](https://duckdb.org/docs/installation/)
-binary itself — no Python, no R, no account.
+binary itself. No Python, no R, no account.
 
 ## Attach and query
 
@@ -28,7 +28,7 @@ ORDER BY source
 ```
 
 Drop `-c "..."` for an interactive shell (`duckdb`), then paste the `ATTACH`
-once per session and query freely — `cbm` stays attached for the rest of that
+once per session and query freely. `cbm` stays attached for the rest of that
 shell. Replace `latest` with a dated folder such as `v2026-11-02` to pin a
 release.
 

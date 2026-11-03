@@ -88,5 +88,5 @@ DBI::dbDisconnect(con, shutdown = TRUE)
 are Kiowa, Otero and Bent counties in the low 60s (percent), each with a
 `reported` `value_status` and a non-NA CI. A suppressed county elsewhere would
 show `value` and the CI columns as `NA` with `value_status` still telling you
-why (`suppressed_small_count`, etc.) — the same contract shown running end to
+why (`suppressed_small_count`, etc.). That is the same contract shown running end to
 end in [duckdb-cli.md](duckdb-cli.md) and [seerstat.md](seerstat.md).

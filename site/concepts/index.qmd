@@ -6,17 +6,16 @@ A release looks like an ordinary set of tables. What makes a query against it
 right or wrong is a handful of ideas that don't show up in any single column
 name:
 
-- [**Three time axes**](time-axes.qmd) — the period a number describes, the
+- [Three time axes](time-axes.qmd): the period a number describes, the
   source release that published it, and the Cancer Basemap release that
-  served it, are three different things and only one of them is usually what you meant
-  to filter on.
-- [**Suppression is a status**](suppression.qmd) — a missing cell is never a
-  blank `value`; it's a documented reason, and the invariant is enforced,
-  not just intended.
-- [**Boundary vintages**](boundaries.qmd) — county and tract boundaries
+  served it are three different things, and only one of them is usually
+  what you meant to filter on.
+- [Suppression is a status](suppression.qmd): a missing cell is never a
+  blank `value`; it's a documented reason, and the invariant is enforced.
+- [Boundary vintages](boundaries.qmd): county and tract boundaries
   change. A FIPS code without a vintage is an assembly name without a patch
   level.
-- [**The licence gate**](licence-gate.qmd) — what's excluded from a
+- [The license gate](license-gate.qmd): what's excluded from a
   source, and why, decided before ingest, not discovered by a user later.
-- [**Cancer Basemap and Cancer InFocus**](cancer-infocus.qmd) — upstream,
-  not a competitor.
+- [Cancer Basemap and Cancer InFocus](cancer-infocus.qmd): how the two
+  projects relate.

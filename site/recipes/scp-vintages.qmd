@@ -5,7 +5,7 @@ title: "What changed across State Cancer Profiles vintages"
 ::: {.stub-callout}
 **Stub.** State Cancer Profiles' `V1`, `V2`, and `V3` are all landed raw
 (`raw.scp__incidence`/`mortality`/`risk`), but only `V3` is derived into
-`measure.observation` — deriving `V1`/`V2` too, so this page can diff a real
+`measure.observation`. Deriving `V1`/`V2` too, so this page can diff a real
 vintage-over-vintage change, is tracked in
 [cancer-basemap#117](https://github.com/seandavi/cancer-basemap/issues/117).
 Once that lands, this page will run the same "diff two releases" pattern as

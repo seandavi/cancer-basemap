@@ -179,10 +179,10 @@ independent open-source app built only on the public releases.
 ## Live county map
 
 The map below reads a small, versioned extract of `measure.observation`
-written at *build* time — the same numbers you'd get querying the release
-directly, just not re-queried on every page load. ["Run this live in your
+written at *build* time. These are the same numbers you'd get querying the release
+directly, but they are not re-queried on every page load. ["Run this live in your
 browser"](recipes/screening-rurality.qmd) runs the same measure/release
-query against the real, 29.6-million-row table through DuckDB-WASM — scoped to
+query against the real, 29.6-million-row table through DuckDB-WASM, scoped to
 one state at a time rather than the whole country, for the reason given on
 that page.
 
@@ -270,26 +270,26 @@ print(f"wrote extracts/home_map.json: {len(rows)} rows, "
 ::: {.callout-note}
 **Two known gaps in this map, verified against the data:**
 
-- **Connecticut** doesn't join. PLACES 2024/2025 report Connecticut's nine
+- Connecticut doesn't join. PLACES 2024/2025 report Connecticut's nine
   2022-vintage planning regions; the county boundary shapes used to draw
   this map (`us-atlas`, still on legacy county lines) only have the eight
-  counties those regions replaced. Connecticut draws as no-data here — a
+  counties those regions replaced. Connecticut draws as no-data here. That is a
   boundary-vintage mismatch worth surfacing, not a bug to hide (see
   [Concepts › Boundary vintages](concepts/boundaries.qmd)).
-- **Kentucky and Pennsylvania** show only 2 of these 6 measures for release
-  2025 — mammography use and colorectal cancer screening — with cancer
+- Kentucky and Pennsylvania show only 2 of these 6 measures for release
+  2025 (mammography use and colorectal cancer screening), with cancer
   (non-skin)/melanoma, current smoking, obesity, and annual checkup all
   missing. Verified directly against `raw.places__county`: both states
   report 40 distinct measures for 2024 but only 5 for 2025 (PLACES-wide,
   not specific to this map's 6), and CDC's own [PLACES release
   notes](https://www.cdc.gov/places/current-release-notes/index.html)
-  confirm why — "Estimates for Kentucky and Pennsylvania were not available
+  confirm why: "Estimates for Kentucky and Pennsylvania were not available
   for measures based on the 2023 BRFSS. However, the five measures based on
   the 2022 BRFSS were carried over for Kentucky and Pennsylvania" (mammography
   use, colorectal cancer screening, dental visits, short sleep duration, and
-  all teeth lost — only the first two are among this map's 6) — the two
+  all teeth lost; only the first two are among this map's 6). The two
   states did not collect enough months of 2023 BRFSS data to meet PLACES'
-  own inclusion threshold, so those five measures are simply carried forward
+  own inclusion threshold, so those five measures are carried forward
   from the prior data year rather than missing.
 :::
 
@@ -366,7 +366,7 @@ Plot.plot({
         return `${d.properties.name} (${d.properties.fips})\n${measureId.label}: ${row[1]}% (CI ${row[2]}–${row[3]})\nrelease ${release}`;
       }
     }),
-    // Suppressed, unavailable, or unmatched counties: drawn grey, never left
+    // Suppressed, unavailable, or unmatched counties: drawn gray, never left
     // to read as zero (AGENTS.md's suppression gate applies to how the map
     // draws, not only to the value column).
     Plot.geo(
@@ -394,7 +394,7 @@ citation](guides/versions-and-citation.qmd) say which version to pin and how
 to cite it. [Catchment Profiles](https://seandavi.github.io/catchment-profiles/)
 shows what an app on top of this looks like.
 
-Some sources are still waiting on a licence review and are not in the
+Some sources are still waiting on a license review and are not in the
 bundle yet, new releases arrive monthly, and catchment boundaries for more
 centers are on the way. If you need a source or a center that is missing, [open
 an issue on GitHub](https://github.com/seandavi/cancer-basemap/issues) and

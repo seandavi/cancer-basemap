@@ -13,7 +13,7 @@ website:
   google-analytics: "G-KLLV1GCF4E"
   search: true
   page-footer:
-    left: "Code: [MIT](https://github.com/seandavi/cancer-basemap/blob/main/LICENSE). Data: each source keeps its own terms — see [Sources](/sources.qmd)."
+    left: "Code: [MIT](https://github.com/seandavi/cancer-basemap/blob/main/LICENSE). Data: each source keeps its own terms; see [Sources](/sources.qmd)."
     # Bump this string by hand whenever the site's build-time extracts (home
     # map, dictionary, concepts, start pages) are refreshed against a new
     # release — there is no automated check.
@@ -59,7 +59,7 @@ website:
         - concepts/time-axes.qmd
         - concepts/suppression.qmd
         - concepts/boundaries.qmd
-        - concepts/licence-gate.qmd
+        - concepts/license-gate.qmd
         - concepts/cancer-infocus.qmd
     - title: "Recipes"
       contents:

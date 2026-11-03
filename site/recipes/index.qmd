@@ -23,9 +23,9 @@ fresh DuckDB-Wasm.
 - [Suppressed and unavailable cells](suppressed-cells.qmd)
 - [A county's boundary history](boundary-history.qmd)
 
-## Stubs — blocked on other work
+## Stubs blocked on other work
 
-- [What changed across State Cancer Profiles vintages](scp-vintages.qmd) —
+- [What changed across State Cancer Profiles vintages](scp-vintages.qmd):
   blocked on [#117](https://github.com/seandavi/cancer-basemap/issues/117).
-- [Catchment report](catchment-report.qmd) — blocked on
+- [Catchment report](catchment-report.qmd): blocked on
   [#43](https://github.com/seandavi/cancer-basemap/issues/43).

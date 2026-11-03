@@ -4,10 +4,10 @@ jupyter: coi-docs
 ---
 
 Every section below is generated at *build* time from the ingest module's
-own docstring (`ast.get_docstring`) — the licence quote, version axis,
+own docstring (`ast.get_docstring`). The license quote, version axis,
 geography vintage, and deliberate omissions are written once, in the code
 that does the ingest, and reproduced here rather than retyped. Nothing on
-this page is hand-copied licence text.
+this page is hand-copied license text.
 
 ```{python}
 #| echo: false

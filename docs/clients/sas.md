@@ -8,7 +8,7 @@ they assume about your SAS environment:
 1. **DuckDB CLI &rarr; CSV/Parquet &rarr; `PROC IMPORT`** (or the Parquet
    LIBNAME engine on Viya). [`sas/cancerbasemap.sas`](../../sas/cancerbasemap.sas)
    implements this as a macro. Requires XCMD (SAS's setting that allows
-   shelling out) enabled for the session — `FILENAME PIPE` shells out to
+   shelling out) enabled for the session, since `FILENAME PIPE` shells out to
    run `duckdb`. **NOXCMD is the default on many managed SAS 9.4 servers and
    on SAS OnDemand for Academics / Viya.** If your site runs NOXCMD, this
    macro cannot execute at all; run the same DuckDB CLI command on your own
@@ -17,7 +17,7 @@ they assume about your SAS environment:
    directly, no PIPE needed).
 2. **`PROC PYTHON` (Viya only).** Viya's Python integration can run the
    `duckdb` Python package directly inside a SAS Studio Viya session and
-   hand a pandas DataFrame back to SAS. Not tested here — Viya is not
+   hand a pandas DataFrame back to SAS. Not tested here: Viya is not
    available on this build host.
 3. **SAS/ACCESS to ODBC + the DuckDB ODBC driver.** DuckDB ships an ODBC
    driver; SAS/ACCESS Interface to ODBC can then treat `cbm.*` tables like
@@ -34,7 +34,7 @@ they assume about your SAS environment:
    `PROC SQL` pass-through `CONNECT` block that issues it before any query),
    or pointing `Database` at a local DuckDB file that already has
    `ATTACH ... AS cbm` baked in via a `.duckdbrc`-style init script your site
-   controls — neither of which this project has built or tested.
+   controls. Neither of these has been built or tested in this project.
 
 See [`sas/cancerbasemap.sas`](../../sas/cancerbasemap.sas) for the macro
 implementing route 1 (`release=` defaults to `latest`; `release=v2026-11-02`
@@ -63,7 +63,7 @@ county:48301,PLACES,2025,PLACES:MAMMOUSE:age_adjusted,,,,suppressed_small_count
 
 That's the exact CSV `%cancerbasemap()`'s `FILENAME PIPE` would hand SAS:
 a header row, a FIPS code with a leading zero preserved (`county:08001`,
-because `geo_id` is a string like `'county:08031'`, never a bare number —
+because `geo_id` is a string like `'county:08031'`, never a bare number;
 see the caveat in `sas/cancerbasemap.sas` about a bare `fips` column
 instead), and a suppressed cell (`county:48301`) as an **empty field**
 (`-nullvalue ''`), which `PROC IMPORT`/a numeric `INPUT` reads as a genuine
