@@ -117,3 +117,14 @@ project's own package. If a page's `.qmd` source changes without its
 `_freeze/` entry being regenerated locally first, CI will try to
 re-execute it, fail (the shim kernel has none of the real dependencies),
 and tell you which page needs a real local re-render.
+
+## Social card
+
+`site/social-card.png` (1200×630, Open Graph / Twitter) is generated, not
+rendered. To regenerate after a release or a design change:
+
+    uvx --from playwright python site/social/make_card.py
+
+It draws the landing page's map extract (`extracts/home_map.json`) with
+headless Chromium and stamps the latest release date from the live manifest.
+`social/` is excluded from the Quarto render; the PNG ships as a resource.
