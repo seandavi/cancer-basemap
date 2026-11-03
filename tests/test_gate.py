@@ -230,3 +230,22 @@ def test_an_unreadable_reference_fails_closed(tmp_path, monkeypatch, capsys, sta
     assert _run(monkeypatch, str(bundle), "--reference", "http://ref.example/latest") == 1
     assert "no readable manifest.json" in capsys.readouterr().out
     assert not (bundle / gate.GATE_FILE).exists()
+
+
+def test_the_reference_is_fetched_with_our_own_user_agent(tmp_path, monkeypatch, capsys):
+    """Cloudflare refuses urllib's default User-Agent (HTTP 403, error 1010) on the data host;
+    the 2026-11-03 scheduled release failed at the gate because of it."""
+    ref = _bundle(tmp_path / "ref", "2026-10-01", {"geography.unit": GEO.format(n=10),
+                                                   "measure.observation": OBSERVATION.format(value="NULL")})
+    manifest = (ref / "manifest.json").read_bytes()
+
+    def urlopen(req):
+        ua = req.get_header("User-agent") if isinstance(req, urllib.request.Request) else None
+        if not ua or ua.startswith("Python-urllib"):
+            raise urllib.error.HTTPError(str(req), 403, "error code: 1010", {}, None)
+        return io.BytesIO(manifest)
+
+    monkeypatch.setattr(gate.urllib.request, "urlopen", urlopen)
+    bundle = _bundle(tmp_path / "candidate", "2026-11-01", {"geography.unit": GEO.format(n=10),
+                                                            "measure.observation": OBSERVATION.format(value="NULL")})
+    assert _run(monkeypatch, str(bundle), "--reference", "https://basemap.example/data/latest") == 0

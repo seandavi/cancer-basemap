@@ -54,10 +54,10 @@ measures = scalar(f"SELECT count(*) FROM {parquet('measure.definition')}")
 # Filtering on the geo_id prefix keeps these scans cheap; they count distinct
 # ids across boundary vintages, so Connecticut's old counties and new planning
 # regions both appear.
-counties, tracts, first_year, last_year = con.execute(f"""
+counties, tracts, editions = con.execute(f"""
     SELECT count(DISTINCT geo_id) FILTER (WHERE geo_id LIKE 'county:%'),
            count(DISTINCT geo_id) FILTER (WHERE geo_id LIKE 'tract:%'),
-           min(left(period_start, 4)), max(left(period_end, 4))
+           count(DISTINCT (source, source_release))
     FROM {obs}
 """).fetchone()
 tables = len(manifest["tables"])
@@ -80,7 +80,9 @@ cards = [
     (measures, "measures defined"),
     (f"{counties:,}", "county IDs with an observation"),
     (f"{tracts:,}", "tract IDs with an observation"),
-    (f"{first_year}–{last_year}", "years covered"),
+    # Every edition a source has published stays in the release beside the next one, so a
+    # change between editions can be traced; that is the history this page counts.
+    (f"{editions:,}", "source editions kept side by side"),
 ]
 # Only the releases that ship a catchment.center table get this card.
 if "catchment.center" in paths:

@@ -155,6 +155,15 @@ check is wrong, fix the gate through a PR. Re-runs the same day reuse a complete
 Face) are fixed by simply re-running. A re-run after `latest/` became today's release
 fails the gate ("not older"): the release is already out.
 
+After the upload, the same run rebuilds and deploys the site (`basemap.cancerdatasci.org`)
+so the landing page's numbers describe the new release. It renders in a throwaway
+worktree of `origin/main`, re-executes only `site/index.qmd`, and deploys with
+`npx wrangler deploy` under the OAuth login in `~/.config/.wrangler`. The docs venv is
+`~/.local/share/cancerbasemap/docs-venv` (outside `$TMPDIR`, which is cleaned weekly), and
+the `coi-docs` Jupyter kernel is re-pointed at it each run. If a release succeeds but the
+site step fails, the data is already published; fix the step and rerun the last block of
+`systemd/release.sh` by hand.
+
 ## Table layout (#120)
 
 Every table declares a `sort_by` (`schemas.TableDef`), and `merge.overwrite`
