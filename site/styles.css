@@ -58,3 +58,15 @@
   line-height: 1.2;
   color: var(--ax-primary);
 }
+
+/* Placeholders and unclassed buttons (an {ojs} Inputs.search box, the recipes'
+   "Retry connection") fall back to browser colours: #757575 is 4.4:1 on the
+   light canvas and black is unreadable on the dark one. */
+input::placeholder, textarea::placeholder { color: var(--ax-muted); opacity: 1; }
+main button:not([class]) {
+  color: var(--ax-text);
+  background: var(--ax-panel);
+  border: 1px solid var(--ax-border);
+  border-radius: 0.5rem;
+  padding: 0.25rem 0.75rem;
+}

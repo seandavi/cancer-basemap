@@ -101,25 +101,28 @@ for value, caption in cards:
 print(":::")
 ```
 
-## Why we built it
+## Why I built it
 
-A cancer center writing a CCSG or COE report needs one sentence it can
-defend: *in our catchment, as reported by source S in release R, the measure
-was X.* The sentence is easy to write. The number behind it often comes from
-a screenshot, a CSV downloaded some months ago and never dated, or a
-dashboard that has since changed underneath it.
+Cancer Basemap is a thin layer. It takes public cancer numbers from several
+sources and delivers them versioned, joinable and citable, keyed on geography
+and time, so that a county or tract means the same thing in every table and a
+number stays attached to the release it came from.
 
-The tools that exist do their jobs well. [State Cancer
-Profiles](https://statecancerprofiles.cancer.gov/) is where most of us look
-up incidence and mortality, [PLACES](https://www.cdc.gov/places/) has its
-own portal for small-area prevalence, and [Cancer
-InFocus](concepts/cancer-infocus.qmd) already packages catchment data for
-the NCI-designated centers. What none of them is built to do is hand you
-numbers from several sources, joined on the same county or tract, with the
-release that produced each one still attached and still queryable after the
-next one lands. Cancer Basemap is a thin layer for that, and nothing more:
-versioned, joinable, citable numbers across sources, which the tools above
-could read from.
+The sources are ones many of us already use. [State Cancer
+Profiles](https://statecancerprofiles.cancer.gov/) is where most people look
+up incidence and mortality, [PLACES](https://www.cdc.gov/places/) publishes
+small-area prevalence through its own portal, and [Cancer
+InFocus](concepts/cancer-infocus.qmd) packages catchment data for the
+NCI-designated centers. This layer draws on the first two and sits beside the
+third.
+
+I started from a small need. A cancer center writing a CCSG or COE report
+wants one sentence it can defend: *in our catchment, as reported by source S
+in release R, the measure was X.* The sentence is easy to write. The number
+behind it can come from a screenshot, or a CSV downloaded some months ago and
+never dated, and keeping the source and release beside each value is what
+this layer is for. It is a starting point, and I would like to hear where it
+falls short for you.
 
 ## What you can do with it
 
@@ -149,7 +152,7 @@ shift in a number can be traced to a shift in the source.
 :::
 
 ::: {.g-col-12 .g-col-md-6 .card .p-3}
-#### Analysis that respects suppression {.mt-0}
+#### Suppression, kept visible {.mt-0}
 
 A suppressed cell is a status with a NULL value, never a zero. [Suppressed
 and unavailable cells](recipes/suppressed-cells.qmd) shows how to count them
