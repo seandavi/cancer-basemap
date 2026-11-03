@@ -8,20 +8,168 @@ jupyter: coi-docs
 [Cite a release](guides/versions-and-citation.qmd){.btn .btn-outline-primary .me-2 .mb-2}
 [View on GitHub](https://github.com/seandavi/cancer-basemap){.btn .btn-link .mb-2}
 
-Cancer Basemap publishes population cancer data — screening, risk factors,
-the social and environmental context around them, and the places people get
-care — as monthly releases: Parquet files plus DuckDB views, keyed on
-geography and time. Every release every source has ever published stays
-queryable, from DuckDB, R, Python, or a browser, with no account and no
-token. Each release stays on R2 for a year, and every release is kept on
-[Hugging Face](https://huggingface.co/datasets/seandavis/cancerbasemap) under
-a tag you can cite.
+Cancer Basemap is public, aggregate cancer data keyed on geography and time,
+published as monthly Parquet releases that you can query from DuckDB, R,
+Python or a browser. There is no account and no token, and every release
+stays attached to the numbers it produced.
 
-Cancer Basemap exists so a cancer center can write, and defend, one sentence: *in
-our catchment, as reported by source S in release R, the measure was X.*
-Today that sentence usually rests on a screenshot, a downloaded CSV of
-unknown vintage, or a dashboard that has since silently changed underneath
-it. Here, the release that produced a number stays attached to it.
+```{python}
+#| echo: false
+#| output: asis
+# Build-time stats strip. Everything printed here is read from the latest
+# release over HTTPS (manifest.json, then read_parquet on the paths it lists)
+# plus the two places releases are published; nothing is typed by hand.
+import json
+import re
+import urllib.request
+
+import duckdb
+
+BASE = "https://basemap.cancerdatasci.org/data/latest/"
+
+
+def get_json(url):
+    # Cloudflare answers urllib's default User-Agent with a 403.
+    req = urllib.request.Request(url, headers={"User-Agent": "cancerbasemap-docs"})
+    with urllib.request.urlopen(req, timeout=60) as r:
+        return json.load(r)
+
+
+manifest = get_json(BASE + "manifest.json")
+paths = {f"{t['schema']}.{t['table']}": BASE + t["path"] for t in manifest["tables"]}
+con = duckdb.connect()
+
+
+def scalar(sql):
+    return con.execute(sql).fetchone()[0]
+
+
+def parquet(table):
+    return f"read_parquet('{paths[table]}')"
+
+
+obs = parquet("measure.observation")
+sources = scalar(f"SELECT count(DISTINCT source) FROM {obs}")
+measures = scalar(f"SELECT count(*) FROM {parquet('measure.definition')}")
+# Filtering on the geo_id prefix keeps these scans cheap; they count distinct
+# ids across boundary vintages, so Connecticut's old counties and new planning
+# regions both appear.
+counties, tracts, first_year, last_year = con.execute(f"""
+    SELECT count(DISTINCT geo_id) FILTER (WHERE geo_id LIKE 'county:%'),
+           count(DISTINCT geo_id) FILTER (WHERE geo_id LIKE 'tract:%'),
+           min(left(period_start, 4)), max(left(period_end, 4))
+    FROM {obs}
+""").fetchone()
+tables = len(manifest["tables"])
+rows = sum(t["row_count"] or 0 for t in manifest["tables"])
+size_gb = sum(t["bytes"] or 0 for t in manifest["tables"]) / 1e9
+
+# A release is published once on R2 (dated folder) and once on Hugging Face
+# (tag of the same date); count each date once.
+r2_dates = {d[:-1] for d in get_json("https://basemap.cancerdatasci.org/data/")["directories"]
+            if re.fullmatch(r"v\d{4}-\d{2}-\d{2}/", d)}
+hf_dates = {t["name"] for t in get_json("https://huggingface.co/api/datasets/seandavis/cancerbasemap/refs")["tags"]
+            if re.fullmatch(r"\d{4}-\d{2}-\d{2}", t["name"])}
+releases = len(r2_dates | {"v" + d for d in hf_dates})
+
+cards = [
+    (manifest["release"], "release date"),
+    (sources, "sources with observations"),
+    (f"{tables} / {rows / 1e6:.1f}M", "tables / total rows, all schemas"),
+    (f"{size_gb:.1f} GB", "whole bundle, as Parquet"),
+    (measures, "measures defined"),
+    (f"{counties:,}", "county IDs with an observation"),
+    (f"{tracts:,}", "tract IDs with an observation"),
+    (f"{first_year}–{last_year}", "years covered"),
+]
+# Only the releases that ship a catchment.center table get this card.
+if "catchment.center" in paths:
+    centers = scalar(f"SELECT count(*) FROM {parquet('catchment.center')}")
+    cards.append((centers, "cancer centers with catchments"))
+cards.append((releases, "releases published"))
+
+print(f"**As of release {manifest['release']}**\n")
+# Three across when the cards divide evenly by three, else four, so the last row is never a stray card.
+span = 4 if len(cards) % 3 == 0 else 3
+print("::: {.grid .mt-2 .mb-5}\n")
+for value, caption in cards:
+    print(f"::: {{.g-col-6 .g-col-md-{span} .card .p-3 .stat}}\n"
+          f"<span class='stat-number'>{value}</span>\n"
+          f"<span class='small text-muted'>{caption}</span>\n:::\n")
+print(":::")
+```
+
+## Why we built it
+
+A cancer center writing a CCSG or COE report needs one sentence it can
+defend: *in our catchment, as reported by source S in release R, the measure
+was X.* The sentence is easy to write. The number behind it often comes from
+a screenshot, a CSV downloaded some months ago and never dated, or a
+dashboard that has since changed underneath it.
+
+The tools that exist do their jobs well. [State Cancer
+Profiles](https://statecancerprofiles.cancer.gov/) is where most of us look
+up incidence and mortality, [PLACES](https://www.cdc.gov/places/) has its
+own portal for small-area prevalence, and [Cancer
+InFocus](concepts/cancer-infocus.qmd) already packages catchment data for
+the NCI-designated centers. What none of them is built to do is hand you
+numbers from several sources, joined on the same county or tract, with the
+release that produced each one still attached and still queryable after the
+next one lands. Cancer Basemap is a thin layer for that, and nothing more:
+versioned, joinable, citable numbers across sources, which the tools above
+could read from.
+
+## What you can do with it
+
+::: {.grid .mt-2}
+
+::: {.g-col-12 .g-col-md-6 .card .p-3}
+#### A catchment burden table {.mt-0}
+
+Build the county table a CCSG or COE report asks for, with the source and
+release beside every value: the [catchment report
+recipe](recipes/catchment-report.qmd).
+:::
+
+::: {.g-col-12 .g-col-md-6 .card .p-3}
+#### Where screening lags {.mt-0}
+
+Rank a state's counties on screening and put rurality next to them in
+[Screening in a state's counties](recipes/screening-rurality.qmd).
+:::
+
+::: {.g-col-12 .g-col-md-6 .card .p-3}
+#### What changed between releases {.mt-0}
+
+Compare [PLACES 2024 with 2025](recipes/places-diff.qmd) or [State Cancer
+Profiles across vintages](recipes/scp-vintages.qmd), county by county, so a
+shift in a number can be traced to a shift in the source.
+:::
+
+::: {.g-col-12 .g-col-md-6 .card .p-3}
+#### Analysis that respects suppression {.mt-0}
+
+A suppressed cell is a status with a NULL value, never a zero. [Suppressed
+and unavailable cells](recipes/suppressed-cells.qmd) shows how to count them
+and keep them out of your averages.
+:::
+
+::: {.g-col-12 .g-col-md-6 .card .p-3}
+#### Environmental context {.mt-0}
+
+EJScreen, AirToxScreen, radon zones and public water systems sit in the same
+bundle as the screening and incidence tables. The
+[Dictionary](dictionary/index.qmd) lists each table and column.
+:::
+
+::: {.g-col-12 .g-col-md-6 .card .p-3}
+#### Build on it {.mt-0}
+
+[Catchment Profiles](https://seandavi.github.io/catchment-profiles/) is an
+independent open-source app built only on the public releases.
+:::
+
+:::
 
 ## Live county map
 
@@ -229,19 +377,20 @@ Plot.plot({
 <span class="suppressed-swatch"></span> no data, suppressed, or not applicable
 &nbsp;·&nbsp; [Run this live in your browser](recipes/screening-rurality.qmd)
 
-## Where to go next
+## Where next
 
-- **Want the data files?** [Releases](releases.qmd) lists every release on R2
-  and Hugging Face; the [playground](playground.qmd) queries the latest one in
-  your browser, and [Versions and citation](guides/versions-and-citation.qmd)
-  says which version to pin and cite.
-- **New here?** [Start here](start/index.qmd) has the exact ATTACH statement
-  and the way in for R, SAS, SEER\*Stat, Python, and the DuckDB CLI.
-- **Building a catchment report?** [Concepts](concepts/index.qmd) covers the
-  three time axes, why suppression is a status rather than a blank cell, and
-  boundary vintages — the things that make a query wrong in a way that still
-  runs.
-- **Looking for a specific measure or table?** The [Dictionary](dictionary/index.qmd)
-  is generated straight from the release and the declared schemas, regenerated
-  at each site build — not hand-maintained, though (like this page's map)
-  it's a snapshot as of that build, not a live query.
+[Start here](start/index.qmd) has the ATTACH statement and the way in for R,
+SAS, SEER\*Stat, Python and the DuckDB CLI. The [Playground](playground.qmd)
+runs SQL against the latest release in your browser, the
+[Recipes](recipes/index.qmd) work through whole questions, and the
+[Dictionary](dictionary/index.qmd) lists every table and measure.
+[Releases](releases.qmd) and [Versions and
+citation](guides/versions-and-citation.qmd) say which version to pin and how
+to cite it. [Catchment Profiles](https://seandavi.github.io/catchment-profiles/)
+shows what an app on top of this looks like.
+
+Some sources are still waiting on a licence review and are not in the
+bundle yet, new releases arrive monthly, and catchment boundaries for more
+centers are on the way. If you need a source or a center that is missing, [open
+an issue on GitHub](https://github.com/seandavi/cancer-basemap/issues) and
+say what you are trying to report.

@@ -47,3 +47,14 @@
 
 /* The docked sidebar's logo slot, empty here. */
 .sidebar-logo-link { display: none; }
+
+/* Landing-page stat cards: Quarto's .grid/.card do the layout; this is the number. */
+.stat { align-items: flex-start; }
+.stat .stat-number {
+  display: block;
+  white-space: nowrap;
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--ax-primary);
+}
