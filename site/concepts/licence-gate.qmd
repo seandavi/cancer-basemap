@@ -1,6 +1,5 @@
 ---
 title: "The licence gate"
-jupyter: coi-docs
 ---
 
 A source is admitted only if it's redistributable by a third party,
@@ -21,17 +20,15 @@ consent of the copyright owner."
 
 `src/cancerbasemap/hrsa_ahrf.py` checks AHRF's own per-field source attribution
 for every one of its 45 distinct upstream sources and builds an **allowlist**
-— a column lands only if its source is confirmed clear, not by default:
+— a column lands only if its source is confirmed clear, not by default. Press
+**Run** to count the columns that did:
 
-```{python}
-#| echo: false
-import duckdb
-
-con = duckdb.connect()
-con.execute("ATTACH 'https://basemap.cancerdatasci.org/data/latest/cancerbasemap.duckdb' AS cbm (READ_ONLY)")
-n = con.execute("SELECT count(distinct column_name) FROM cbm.raw.hrsa__ahrf").fetchall()[0][0]
-print(f"Columns actually landed in raw.hrsa__ahrf today: {n}")
+```{.sql .runnable}
+SELECT count(DISTINCT column_name) AS columns_landed
+FROM raw.hrsa__ahrf
 ```
+
+The number it returns is what actually landed in `raw.hrsa__ahrf`.
 
 That allowlist excludes 2,789 of AHRF's 4,352 columns, including **every**
 physician-specialty count (oncology, radiation oncology, gastroenterology —
@@ -56,16 +53,17 @@ checked this directly rather than assuming a column named `ORG_NAME` is
 organizational: of systems that are both privately owned and small, 30%
 have an `ORG_NAME` matching a `"LASTNAME, FIRSTNAME"` pattern, and 94% of
 those match the system's own personal `ADMIN_NAME` field exactly. Nine
-columns are excluded entirely — never landed, in raw or anywhere else:
+columns are excluded entirely — never landed, in raw or anywhere else. Press
+**Run** to look for them in the live table:
 
-```{python}
-#| echo: false
-cols = con.sql("DESCRIBE cbm.raw.sdwis__pub_water_systems").df()["column_name"].tolist()
-excluded = ["ADMIN_NAME", "EMAIL_ADDR", "PHONE_NUMBER", "PHONE_EXT_NUMBER",
-            "FAX_NUMBER", "ALT_PHONE_NUMBER", "ORG_NAME", "ADDRESS_LINE1", "ADDRESS_LINE2"]
-present = [c for c in excluded if c in cols]
-print(f"Of {len(excluded)} columns excluded for personal data, {len(present)} are present in the live table.")
+```{.sql .runnable}
+SELECT count(*) AS excluded_columns_present
+FROM (DESCRIBE raw.sdwis__pub_water_systems)
+WHERE column_name IN ('ADMIN_NAME', 'EMAIL_ADDR', 'PHONE_NUMBER', 'PHONE_EXT_NUMBER',
+                      'FAX_NUMBER', 'ALT_PHONE_NUMBER', 'ORG_NAME', 'ADDRESS_LINE1', 'ADDRESS_LINE2')
 ```
+
+It should return 0 of the nine.
 
 SPEC.md and AGENTS.md both call for public *aggregates* only — this is that
 rule applied at the column level, not just the source level.

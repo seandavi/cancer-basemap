@@ -1,12 +1,12 @@
 ---
 title: "Boundary vintages"
-jupyter: coi-docs
 ---
 
 County and tract boundaries change: counties split, merge, or get replaced
 entirely. A FIPS code without a vintage is an assembly name without a patch
 level — the same code can mean a different shape depending on when it was
-issued.
+issued. Press **Run** under any block to execute it in your browser against
+the latest release.
 
 ## The worked example: SVI's own county count
 
@@ -15,45 +15,35 @@ edition, so its county count across editions is a direct, queryable record
 of every boundary change that mattered at the county level between 2014 and
 2022:
 
-```{python}
-#| echo: false
-import duckdb
-
-con = duckdb.connect()
-con.execute("ATTACH 'https://basemap.cancerdatasci.org/data/latest/cancerbasemap.duckdb' AS cbm (READ_ONLY)")
-con.sql("""
-    SELECT svi_edition, count(distinct fips) AS counties
-    FROM cbm.raw.svi__county
-    GROUP BY 1 ORDER BY 1
-""").df()
+```{.sql .runnable}
+SELECT svi_edition, count(distinct fips) AS counties
+FROM raw.svi__county
+GROUP BY 1
+ORDER BY 1
 ```
 
-3,142 / 3,142 / 3,142 / 3,143 / 3,144 — flat for three editions, then +1,
-then +1 again. Both jumps are real redistrictings, not data errors, and both
-are queryable directly:
+The count is flat for three editions (3,142), then +1, then +1 again. Both
+jumps are real redistrictings, not data errors, and both are queryable
+directly:
 
-```{python}
-#| echo: false
-con.sql("""
-    SELECT svi_edition, count(*) AS rows
-    FROM cbm.raw.svi__county
-    WHERE fips IN ('02261', '02063', '02066')  -- Valdez-Cordova / Chugach / Copper River
-    GROUP BY 1 ORDER BY 1
-""").df()
+```{.sql .runnable}
+SELECT svi_edition, count(*) AS rows
+FROM raw.svi__county
+WHERE fips IN ('02261', '02063', '02066')  -- Valdez-Cordova / Chugach / Copper River
+GROUP BY 1
+ORDER BY 1
 ```
 
 Alaska's Valdez-Cordova Census Area (`02261`) splits into Chugach (`02063`)
 and Copper River (`02066`) starting with the 2020 edition — one row becomes
 two, the +1 between the 2018 and 2020 counts.
 
-```{python}
-#| echo: false
-con.sql("""
-    SELECT svi_edition, count(*) AS rows
-    FROM cbm.raw.svi__county
-    WHERE fips LIKE '09%'  -- Connecticut
-    GROUP BY 1 ORDER BY 1
-""").df()
+```{.sql .runnable}
+SELECT svi_edition, count(*) AS rows
+FROM raw.svi__county
+WHERE fips LIKE '09%'  -- Connecticut
+GROUP BY 1
+ORDER BY 1
 ```
 
 Connecticut's eight legacy counties persist through the 2020 edition; the
@@ -66,13 +56,10 @@ boundary change, so it doesn't move the county *count* at all; it shows up
 instead as `fips` changing from `46113` to `46102` starting with the 2016
 edition, with the pre-2016 code still resolving through `geography.alias`:
 
-```{python}
-#| echo: false
-con.sql("""
-    SELECT old_geo_id, new_geo_id, effective_year, change_type, old_name, new_name
-    FROM cbm.geography.alias
-    WHERE old_geo_id = 'county:46113'
-""").df()
+```{.sql .runnable}
+SELECT old_geo_id, new_geo_id, effective_year, change_type, old_name, new_name
+FROM geography.alias
+WHERE old_geo_id = 'county:46113'
 ```
 
 ## Why `geography.unit` carries a `vintage` at all
@@ -89,4 +76,4 @@ current one, so a join on a retired code still finds its record instead of
 silently dropping it.
 
 [Recipes › A county's boundary history](/recipes/boundary-history.qmd) runs
-Connecticut's own boundary history live, in your browser.
+Connecticut's own boundary history.

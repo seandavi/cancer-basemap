@@ -3,78 +3,48 @@ title: "What changed between PLACES 2024 and 2025"
 ---
 
 Every measure for one county, both PLACES releases side by side, largest
-absolute change first — run live against the latest release.
+absolute change first. Press **Run** to execute it in your browser against the
+latest release. Denver County, CO (`county:08031`) is an ordinary county:
 
-{{< include _duckdb-shared.qmd >}}
-
-```{ojs}
-//| echo: false
-viewof countyFips = Inputs.text({
-  label: "County geo_id (5-digit FIPS)",
-  value: "09170",
-  placeholder: "e.g. 08031"
-})
-```
-
-South Central Connecticut Planning Region (`09170`) is the default —
-Connecticut's PLACES rows use 2022-vintage planning-region FIPS even though
-PLACES tags them `geo_vintage=2020` (see
-[Concepts › Time axes](/concepts/time-axes.qmd) and
-[cancer-basemap#21](https://github.com/seandavi/cancer-basemap/issues/21)).
-Try `08031` (Denver County, CO) for an ordinary county.
-
-```{ojs}
-//| echo: false
-sql = `SELECT o25.measure_id,
+```{.sql .runnable}
+SELECT o25.measure_id,
        o24.value AS v2024, o25.value AS v2025,
        round(o25.value - o24.value, 2) AS delta
-FROM cbm.measure.observation o24
-JOIN cbm.measure.observation o25
+FROM measure.observation o24
+JOIN measure.observation o25
   ON o24.measure_id = o25.measure_id AND o24.geo_id = o25.geo_id
   AND o24.stratum_id = o25.stratum_id
 WHERE o24.source = 'PLACES' AND o24.source_release = '2024'
   AND o25.source = 'PLACES' AND o25.source_release = '2025'
-  AND o24.geo_id = 'county:${countyFips}'
+  AND o24.geo_id = 'county:08031' AND o25.geo_id = 'county:08031'
   AND o24.value IS NOT NULL AND o25.value IS NOT NULL
 ORDER BY abs(delta) DESC
-LIMIT 15`
+LIMIT 15
 ```
 
-```{ojs}
-//| echo: false
-queryState = {
-  sql; // reactive dependency
-  if (dbState.status !== "ready") return dbState;
-  const t0 = performance.now();
-  try {
-    const result = await dbState.conn.query(sql);
-    return { status: "ready", rows: rowsFromArrow(result), ms: performance.now() - t0 };
-  } catch (error) {
-    return { status: "error", error };
-  }
-}
+South Central Connecticut Planning Region (`county:09170`) is the other kind.
+Connecticut's PLACES rows use 2022-vintage planning-region FIPS even though
+PLACES tags them `geo_vintage=2020` (see
+[Concepts › Time axes](/concepts/time-axes.qmd) and
+[cancer-basemap#21](https://github.com/seandavi/cancer-basemap/issues/21)), so
+the same query works on it unchanged:
+
+```{.sql .runnable}
+SELECT o25.measure_id,
+       o24.value AS v2024, o25.value AS v2025,
+       round(o25.value - o24.value, 2) AS delta
+FROM measure.observation o24
+JOIN measure.observation o25
+  ON o24.measure_id = o25.measure_id AND o24.geo_id = o25.geo_id
+  AND o24.stratum_id = o25.stratum_id
+WHERE o24.source = 'PLACES' AND o24.source_release = '2024'
+  AND o25.source = 'PLACES' AND o25.source_release = '2025'
+  AND o24.geo_id = 'county:09170' AND o25.geo_id = 'county:09170'
+  AND o24.value IS NOT NULL AND o25.value IS NOT NULL
+ORDER BY abs(delta) DESC
+LIMIT 15
 ```
 
-```{ojs}
-//| echo: false
-renderStatus(dbState, queryState)
-```
-
-```{ojs}
-//| echo: false
-queryState.status === "ready"
-  ? (queryState.rows.length
-      ? Inputs.table(queryState.rows, { columns: ["measure_id", "v2024", "v2025", "delta"] })
-      : html`<p><em>No measure has a value in both releases for this county — check the FIPS code.</em></p>`)
-  : html`<p><em>Table will render once the query returns.</em></p>`
-```
-
-<details>
-<summary>SQL run for this table</summary>
-
-```{ojs}
-//| echo: false
-html`<pre><code>${sql}</code></pre>`
-```
-
-</details>
+Both filter on the one `geo_id` twice so DuckDB reads only that state's part
+of `measure.observation`. Swap in any other county's `geo_id` (5-digit FIPS
+after `county:`) to compare it.

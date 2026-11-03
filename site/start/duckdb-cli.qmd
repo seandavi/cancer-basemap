@@ -1,6 +1,5 @@
 ---
 title: "DuckDB CLI"
-jupyter: coi-docs
 ---
 
 No install beyond the [`duckdb`](https://duckdb.org/docs/installation/)
@@ -15,19 +14,17 @@ SELECT source, count(*) AS rows FROM cbm.measure.observation GROUP BY source ORD
 "
 ```
 
-This page's own output is the real thing — run at build time, through the
-actual `duckdb` binary, not typed in by hand:
+The same query runs in your browser: press **Run** to execute it against the
+latest release with DuckDB-Wasm. The browser block counts Colorado's counties
+only (`geo_id LIKE 'county:08%'`), which keeps the read small; the CLI above
+counts every row.
 
-```{python}
-#| echo: false
-import subprocess
-
-sql = """
-ATTACH 'https://basemap.cancerdatasci.org/data/latest/cancerbasemap.duckdb' AS cbm (READ_ONLY);
-SELECT source, count(*) AS rows FROM cbm.measure.observation GROUP BY source ORDER BY source;
-"""
-result = subprocess.run(["duckdb", "-c", sql], capture_output=True, text=True, check=True)
-print(result.stdout)
+```{.sql .runnable}
+SELECT source, count(*) AS rows
+FROM measure.observation
+WHERE geo_id LIKE 'county:08%'
+GROUP BY source
+ORDER BY source
 ```
 
 Drop `-c "..."` for an interactive shell (`duckdb`), then paste the `ATTACH`

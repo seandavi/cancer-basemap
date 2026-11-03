@@ -2,67 +2,43 @@
 title: "Suppressed and unavailable cells"
 ---
 
-Every row whose `value_status` isn't `'reported'`, for a chosen source —
-proving `value` reads as `NULL` for every one of them, never a number (see
-[Concepts › Suppression](/concepts/suppression.qmd)).
+Every row whose `value_status` isn't `'reported'` carries a `NULL` `value`,
+never a number (see [Concepts › Suppression](/concepts/suppression.qmd)).
+Press **Run** on each block to check it in your browser against the latest
+release. State Cancer Profiles hides the most cells, so the examples use
+Colorado's SCP counties; `08` is Colorado's FIPS code and the
+`geo_id LIKE 'county:08%'` filter keeps each read to that one state.
 
-{{< include _duckdb-shared.qmd >}}
+How many rows have each status, and how many of them have a value:
 
-```{ojs}
-//| echo: false
-SOURCES = ["SCP", "PLACES", "SVI", "AHRF", "FARA", "RUCC", "RUCA", "SDWIS", "HPSA"]
+```{.sql .runnable}
+SELECT value_status, count(*) AS n, count(value) AS with_value
+FROM measure.observation
+WHERE source = 'SCP' AND geo_id LIKE 'county:08%'
+GROUP BY value_status
+ORDER BY n DESC
 ```
 
-```{ojs}
-//| echo: false
-viewof sourceChoice = Inputs.select(SOURCES, { label: "Source", value: "PLACES" })
+`with_value` is 0 on every row except `reported`. The rows behind it:
+
+```{.sql .runnable}
+SELECT source_release, measure_id, stratum_id, geo_id, value_status, value
+FROM measure.observation
+WHERE source = 'SCP' AND geo_id LIKE 'county:08%' AND value_status != 'reported'
+ORDER BY source_release, measure_id, stratum_id, geo_id
+LIMIT 50
 ```
 
-```{ojs}
-//| echo: false
-sql = `SELECT source_release, measure_id, geo_id, value_status, value
-FROM cbm.measure.observation
-WHERE source = '${sourceChoice}' AND value_status != 'reported'
-ORDER BY source_release, measure_id, geo_id
-LIMIT 500`
+The invariant as a single number, which should come back as 0: rows that are
+not `'reported'` but still have a value.
+
+```{.sql .runnable}
+SELECT count(*) AS leaks
+FROM measure.observation
+WHERE source = 'SCP' AND geo_id LIKE 'county:08%'
+  AND value_status != 'reported' AND value IS NOT NULL
 ```
 
-```{ojs}
-//| echo: false
-queryState = {
-  sql; // reactive dependency
-  if (dbState.status !== "ready") return dbState;
-  const t0 = performance.now();
-  try {
-    const result = await dbState.conn.query(sql);
-    return { status: "ready", rows: rowsFromArrow(result), ms: performance.now() - t0 };
-  } catch (error) {
-    return { status: "error", error };
-  }
-}
-```
-
-```{ojs}
-//| echo: false
-renderStatus(dbState, queryState)
-```
-
-```{ojs}
-//| echo: false
-queryState.status === "ready"
-  ? (queryState.rows.length
-      ? html`${Inputs.table(queryState.rows, { columns: ["source_release", "measure_id", "geo_id", "value_status", "value"] })}
-         <p class="recipe-status">${queryState.rows.filter((r) => r.value !== null).length} of ${queryState.rows.length} rows shown have a non-null value — should always be 0.</p>`
-      : html`<p><em>No suppressed or unavailable rows for this source — every row is 'reported'.</em></p>`)
-  : html`<p><em>Table will render once the query returns.</em></p>`
-```
-
-<details>
-<summary>SQL run for this table</summary>
-
-```{ojs}
-//| echo: false
-html`<pre><code>${sql}</code></pre>`
-```
-
-</details>
+Change `'SCP'` to another source (`PLACES`, `SVI`, `AHRF`, `FARA`, `RUCC`,
+`RUCA`, `SDWIS`, `HPSA`) to look at its own suppression. A source with nothing
+suppressed in that state returns an empty table or a count of 0.

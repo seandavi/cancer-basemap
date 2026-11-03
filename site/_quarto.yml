@@ -3,6 +3,7 @@ project:
   output-dir: _site
   resources:
     - shell-links.js
+    - run-sql.js
 
 website:
   title: "Cancer Basemap"

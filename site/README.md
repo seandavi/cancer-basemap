@@ -1,8 +1,10 @@
 # Cancer Basemap docs site
 
 A [Quarto](https://quarto.org/) website: static pages plus build-time
-queries against the latest release bundle (Dictionary, Concepts, Start here, the Home
-page's map extract) and live in-browser DuckDB-WASM queries (Recipes).
+queries against the latest release bundle (Dictionary, Sources, the Home
+page's map extract) and SQL the reader runs in the browser with DuckDB-Wasm
+(Recipes, Concepts, Start here: a ```` ```{.sql .runnable} ```` block gets a Run
+button from `run-sql.js`, and nothing executes at build time).
 Nothing here writes to a release.
 
 Supersedes the throwaway prototype from #119 — that PR is not merged; this
@@ -56,7 +58,7 @@ whose numbers it feeds) with a real network render whenever the underlying
 release changes meaningfully:
 
 ```sh
-rm -rf _freeze/index _freeze/dictionary _freeze/sources* _freeze/concepts _freeze/start
+rm -rf _freeze/index _freeze/dictionary _freeze/sources*
 quarto render .
 git add extracts/home_map.json _freeze
 ```
