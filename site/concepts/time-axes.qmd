@@ -1,6 +1,5 @@
 ---
 title: "Three time axes"
-jupyter: coi-docs
 ---
 
 Every measure carries two notions of "when" in its columns, and the release
@@ -15,19 +14,14 @@ domain.
 
 ## A real example: PLACES 2024 vs. 2025
 
-```{python}
-#| echo: false
-import duckdb
+Press **Run** to execute a block in your browser against the latest release.
 
-con = duckdb.connect()
-con.execute("ATTACH 'https://basemap.cancerdatasci.org/data/latest/cancerbasemap.duckdb' AS cbm (READ_ONLY)")
-con.sql("""
-    SELECT source_release, period_start, period_end, value
-    FROM cbm.measure.observation
-    WHERE source = 'PLACES' AND measure_id = 'PLACES:CANCER:age_adjusted'
-      AND geo_id = 'county:08031'
-    ORDER BY source_release
-""").df()
+```{.sql .runnable}
+SELECT source_release, period_start, period_end, value
+FROM measure.observation
+WHERE source = 'PLACES' AND measure_id = 'PLACES:CANCER:age_adjusted'
+  AND geo_id = 'county:08031'
+ORDER BY source_release
 ```
 
 Two rows, same measure, same county (Denver County, CO). The **source
@@ -48,16 +42,16 @@ dated folder, or its Hugging Face tag, is how you reproduce an analysis (see
 ## A second example: an edition's own period moves
 
 SVI's `source_release` **is** the edition, and each edition's own period is
-a five-year ACS window that moves with it — never the edition year alone:
+a five-year ACS window that moves with it — never the edition year alone. This
+reads Colorado's counties only (`geo_id LIKE 'county:08%'`), which is enough to
+show every edition's period:
 
-```{python}
-#| echo: false
-con.sql("""
-    SELECT source_release AS edition, min(period_start) AS period_start, max(period_end) AS period_end
-    FROM cbm.measure.observation
-    WHERE source = 'SVI'
-    GROUP BY 1 ORDER BY 1
-""").df()
+```{.sql .runnable}
+SELECT source_release AS edition, min(period_start) AS period_start, max(period_end) AS period_end
+FROM measure.observation
+WHERE source = 'SVI' AND geo_id LIKE 'county:08%'
+GROUP BY 1
+ORDER BY 1
 ```
 
 The 2020 edition's period is `2016`–`2020`, not `'2020'` alone — treating an

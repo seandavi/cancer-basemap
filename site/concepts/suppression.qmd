@@ -1,6 +1,5 @@
 ---
 title: "Suppression is a status"
-jupyter: coi-docs
 ---
 
 Surveillance sources hide small or unreliable numbers for good reasons —
@@ -28,32 +27,25 @@ average.
 
 ## Verified against the release
 
-```{python}
-#| echo: false
-import duckdb
+Press **Run** to check the invariant yourself, in your browser, against the
+latest release. This counts every row in Colorado's counties (`08` is its FIPS
+code; filtering on the `geo_id` prefix is what keeps the read small) by source
+and status. `with_value` counts the rows that have a number, so it is 0
+everywhere except `reported`:
 
-con = duckdb.connect()
-con.execute("ATTACH 'https://basemap.cancerdatasci.org/data/latest/cancerbasemap.duckdb' AS cbm (READ_ONLY)")
-zero_leaks = con.execute("""
-    SELECT count(*) FROM cbm.measure.observation
-    WHERE value_status != 'reported' AND value IS NOT NULL
-""").fetchall()[0][0]
-print(f"Rows where value_status != 'reported' but value is not NULL: {zero_leaks}")
+```{.sql .runnable}
+SELECT source, value_status, count(*) AS n, count(value) AS with_value
+FROM measure.observation
+WHERE geo_id LIKE 'county:08%'
+GROUP BY source, value_status
+ORDER BY source, value_status
 ```
 
-Real counts by source, as of this render:
+State Cancer Profiles carries most of the suppression in the release; the
+[suppressed-cells recipe](/recipes/suppressed-cells.qmd) shows its Colorado
+rows one by one.
 
-```{python}
-#| echo: false
-con.sql("""
-    SELECT source, value_status, count(*) AS n
-    FROM cbm.measure.observation
-    GROUP BY 1, 2
-    ORDER BY 1, 2
-""").df()
-```
-
-Two sources carry almost all of the suppression here. State Cancer
+Two sources carry almost all of the suppression in the release. State Cancer
 Profiles' cancer counts are frequently small at the county level — its
 `suppressed_small_count` share dwarfs every other source's, exactly as
 expected for county-level cancer incidence and mortality. PLACES,
@@ -72,4 +64,4 @@ data" without also checking what's *behind* the NULLs you dropped — a county
 missing from your result because it's `suppressed_small_count` is a
 different finding than one missing because the source never covered it at
 all (`not_available`). The [suppressed-cells recipe](/recipes/suppressed-cells.qmd)
-runs this page's own query live, in your browser.
+runs these checks on State Cancer Profiles' Colorado counties.

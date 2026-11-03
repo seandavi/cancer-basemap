@@ -2,22 +2,21 @@
 title: "Recipes"
 ---
 
-Every page below runs its query **live**, in your browser, against the latest
-release through DuckDB-WASM — no server renders these results. Each shows
-the SQL it ran, so you can copy it straight into your own DuckDB.
+Every recipe is SQL you run yourself: press **Run** under a block and it executes in
+your browser, against the latest release, through DuckDB-Wasm. Nothing runs
+until you press it, and the first run downloads DuckDB itself, a few MB. The
+results are always the current release's, and the SQL shown is exactly the SQL
+that ran, so you can also open it in the DuckDB Shell or copy it into your own
+DuckDB.
 
-::: {.callout-warning}
-Large-table reads can fail intermittently in a long-lived browser tab — a
-resource-accumulation limit in the pinned DuckDB-WASM build, not a bug in
-any one query (tracked in
-[cancer-basemap#120](https://github.com/seandavi/cancer-basemap/issues/120)).
-Each page's Retry button rebuilds its DuckDB-WASM instance from scratch,
-which clears most failures; if Retry doesn't help, a **hard refresh**
-(shift-reload) clears a cached failed response that a plain reload can
-otherwise keep re-serving from the browser's own cache.
-:::
+Queries are scoped (one state, one measure, one source release) so each run
+reads a few megabytes. Full scans of `measure.observation` are slow in a
+browser tab and can run out of its memory; for those, use DuckDB on your own
+machine ([Versions and citation](/guides/versions-and-citation.qmd)). If a
+run fails, the message appears under the block; reloading the page starts a
+fresh DuckDB-Wasm.
 
-## Live recipes
+## Recipes
 
 - [Screening in a state's counties, with rurality](screening-rurality.qmd)
 - [What changed between PLACES 2024 and 2025, for a county](places-diff.qmd)

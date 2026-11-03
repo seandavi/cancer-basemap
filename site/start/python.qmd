@@ -1,10 +1,10 @@
 ---
 title: "Python"
-jupyter: coi-docs
 ---
 
-Everything below runs at build time against the latest release — this page's
-own output is real, not copied.
+The Python below is static code. The SQL inside it is the same SQL you can run
+in your browser: press **Run** to see what it returns against the latest
+release.
 
 ## Install
 
@@ -14,7 +14,7 @@ pip install duckdb
 
 ## Attach and query
 
-```{python}
+```python
 import duckdb
 
 con = duckdb.connect()
@@ -24,7 +24,24 @@ con.execute("ATTACH 'https://basemap.cancerdatasci.org/data/latest/cancerbasemap
 Mammography screening in Colorado counties, lowest first, with the interval,
 the release that said so, and the county's rurality code:
 
-```{python}
+```{.sql .runnable}
+SELECT u.name, o.source_release, o.value AS pct, o.lower, o.upper, o.value_status,
+       r.value AS rucc_code
+FROM measure.observation o
+JOIN geography.unit u
+  ON u.geo_id = o.geo_id AND u.vintage = 2026
+LEFT JOIN measure.observation r
+  ON r.geo_id = o.geo_id AND r.source = 'RUCC' AND r.geo_id LIKE 'county:08%'
+WHERE o.source = 'PLACES' AND o.measure_id = 'PLACES:MAMMOUSE:age_adjusted'
+  AND o.source_release = '2025'
+  AND o.geo_id LIKE 'county:08%' AND u.parent_geo_id = 'state:08'
+ORDER BY pct LIMIT 10
+```
+
+In Python, run it against the `cbm` alias (`cbm.measure.observation`,
+`cbm.geography.unit`) with `con.sql(...)`:
+
+```python
 con.sql("""
     SELECT u.name, o.source_release, o.value AS pct, o.lower, o.upper, o.value_status,
            r.value AS rucc_code
@@ -32,13 +49,16 @@ con.sql("""
     JOIN cbm.geography.unit u
       ON u.geo_id = o.geo_id AND u.vintage = 2026
     LEFT JOIN cbm.measure.observation r
-      ON r.geo_id = o.geo_id AND r.source = 'RUCC'
+      ON r.geo_id = o.geo_id AND r.source = 'RUCC' AND r.geo_id LIKE 'county:08%'
     WHERE o.source = 'PLACES' AND o.measure_id = 'PLACES:MAMMOUSE:age_adjusted'
-      AND o.source_release = '2025' AND u.parent_geo_id = 'state:08'
-     
+      AND o.source_release = '2025'
+      AND o.geo_id LIKE 'county:08%' AND u.parent_geo_id = 'state:08'
     ORDER BY pct LIMIT 10
 """).df()
 ```
+
+`measure.observation` is laid out by state, so the `geo_id LIKE 'county:08%'`
+filter (`08` is Colorado) lets DuckDB read just that state's part of it.
 
 Fetch with `duckdb`, `requests` or `polars`: Python's default `urllib` user
 agent is blocked by the zone (HTTP 403, Cloudflare error 1010). Pin a dated

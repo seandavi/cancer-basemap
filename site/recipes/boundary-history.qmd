@@ -3,74 +3,29 @@ title: "A county's boundary history"
 ---
 
 A state's county-level geography across every Gazetteer vintage the release
-carries — run live. Connecticut (the default) is the clearest example: eight
-legacy counties through 2020, replaced by nine planning regions in 2022 (see
+carries. Press **Run** to execute each block in your browser against the latest
+release. Connecticut (`state:09`) is the clearest example: eight legacy
+counties through 2020, replaced by nine planning regions in 2022 (see
 [Concepts › Boundary vintages](/concepts/boundaries.qmd)).
 
-{{< include _duckdb-shared.qmd >}}
+County count by vintage:
 
-```{ojs}
-//| echo: false
-viewof stateChoice = Inputs.select(US_STATES, {
-  label: "State",
-  format: (d) => d.name,
-  value: US_STATES.find((s) => s.fips === "09")
-})
+```{.sql .runnable}
+SELECT vintage, count(*) AS counties
+FROM geography.unit
+WHERE level = 'county' AND parent_geo_id = 'state:09'
+GROUP BY vintage
+ORDER BY vintage
 ```
 
-```{ojs}
-//| echo: false
-sql = `SELECT vintage, geo_id, name, round(aland_m2 / 1e6, 1) AS land_km2
-FROM cbm.geography.unit
-WHERE level = 'county' AND parent_geo_id = 'state:${stateChoice.fips}'
-ORDER BY vintage, geo_id`
+Every county, by vintage:
+
+```{.sql .runnable}
+SELECT vintage, geo_id, name, round(aland_m2 / 1e6, 1) AS land_km2
+FROM geography.unit
+WHERE level = 'county' AND parent_geo_id = 'state:09'
+ORDER BY vintage, geo_id
 ```
 
-```{ojs}
-//| echo: false
-queryState = {
-  sql; // reactive dependency
-  if (dbState.status !== "ready") return dbState;
-  const t0 = performance.now();
-  try {
-    const result = await dbState.conn.query(sql);
-    return { status: "ready", rows: rowsFromArrow(result), ms: performance.now() - t0 };
-  } catch (error) {
-    return { status: "error", error };
-  }
-}
-```
-
-```{ojs}
-//| echo: false
-renderStatus(dbState, queryState)
-```
-
-```{ojs}
-//| echo: false
-queryState.status === "ready"
-  ? Inputs.table(queryState.rows, { columns: ["vintage", "geo_id", "name", "land_km2"] })
-  : html`<p><em>Table will render once the query returns.</em></p>`
-```
-
-```{ojs}
-//| echo: false
-queryState.status === "ready"
-  ? html`<p class="recipe-status">County count by vintage: ${
-      Array.from(d3.rollup(queryState.rows, (v) => v.length, (d) => d.vintage))
-        .sort((a, b) => a[0] - b[0])
-        .map(([v, n]) => `${v}: ${n}`)
-        .join(", ")
-    }</p>`
-  : ""
-```
-
-<details>
-<summary>SQL run for this table</summary>
-
-```{ojs}
-//| echo: false
-html`<pre><code>${sql}</code></pre>`
-```
-
-</details>
+`geography.unit` is small, so any state is cheap: replace `state:09` with
+`state:<fips>` for another one.

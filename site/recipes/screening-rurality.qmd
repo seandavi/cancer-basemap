@@ -3,85 +3,54 @@ title: "Screening in a state's counties, with rurality"
 ---
 
 This is the same measure/release query the [Home](/index.qmd) map's data
-was built from — run here **live**, against the real, 29.6-million-row
-`measure.observation` table in the latest release, through DuckDB-WASM in your own browser.
-Scoped to one state rather than the whole country: `measure.observation`
-is one very large Parquet file, and a national-scope live read of it is exactly the pattern that fails
-intermittently in this DuckDB-WASM build
-([cancer-basemap#120](https://github.com/seandavi/cancer-basemap/issues/120)).
-One state at a time stays well inside the sizes that read reliably.
+was built from, scoped to one state: Colorado. Press **Run** and it executes
+in your browser with DuckDB-Wasm against the latest release. Nothing runs until
+you do.
 
-{{< include _duckdb-shared.qmd >}}
+Two things keep the read to a few megabytes of `measure.observation`, which is
+one very large Parquet file. It is laid out by state first, so a
+`geo_id LIKE 'county:08%'` filter (`08` is Colorado's FIPS code) lets DuckDB skip
+every other state's row groups. And the filters on `source`, `source_release`
+and `measure_id` narrow the rest. To look at another state, change `08` in
+both places it appears.
 
-```{ojs}
-//| echo: false
-MEASURES = [
-  { measure_id: "PLACES:CANCER:age_adjusted", label: "Cancer (non-skin) or melanoma" },
-  { measure_id: "PLACES:COLON_SCREEN:age_adjusted", label: "Colorectal cancer screening" },
-  { measure_id: "PLACES:MAMMOUSE:age_adjusted", label: "Mammography use" },
-  { measure_id: "PLACES:CSMOKING:age_adjusted", label: "Current cigarette smoking" },
-  { measure_id: "PLACES:CHECKUP:age_adjusted", label: "Annual checkup" }
-]
-RELEASES = ["2025", "2024"]
-```
+Colorectal cancer screening in Colorado's counties, lowest first, with the
+interval, its status and the county's rurality code (RUCC, 1 is most
+metropolitan):
 
-```{ojs}
-//| echo: false
-viewof stateChoice = Inputs.select(US_STATES, {
-  label: "State",
-  format: (d) => d.name,
-  value: US_STATES.find((s) => s.fips === "08")
-})
-viewof measureChoice = Inputs.select(MEASURES, { label: "Measure", format: (d) => d.label, value: MEASURES[0] })
-viewof releaseChoice = Inputs.select(RELEASES, { label: "Release" })
-```
-
-```{ojs}
-//| echo: false
-sql = `SELECT u.name, o.value AS pct, o.lower, o.upper, o.value_status, r.value AS rucc_code
-FROM cbm.measure.observation o
-JOIN cbm.geography.unit u
+```{.sql .runnable}
+SELECT u.name, o.value AS pct, o.lower, o.upper, o.value_status,
+       r.value AS rucc_code
+FROM measure.observation o
+JOIN geography.unit u
   ON u.geo_id = o.geo_id AND u.vintage = 2026
-LEFT JOIN cbm.measure.observation r
-  ON r.geo_id = o.geo_id AND r.source = 'RUCC'
-WHERE o.source = 'PLACES' AND o.measure_id = '${measureChoice.measure_id}'
-  AND o.source_release = '${releaseChoice}' AND u.parent_geo_id = 'state:${stateChoice.fips}'
-ORDER BY pct`
+LEFT JOIN measure.observation r
+  ON r.geo_id = o.geo_id AND r.source = 'RUCC' AND r.geo_id LIKE 'county:08%'
+WHERE o.source = 'PLACES' AND o.source_release = '2025'
+  AND o.measure_id = 'PLACES:COLON_SCREEN:age_adjusted'
+  AND o.geo_id LIKE 'county:08%' AND u.parent_geo_id = 'state:08'
+ORDER BY pct
+LIMIT 20
 ```
 
-```{ojs}
-//| echo: false
-queryState = {
-  sql; // reactive dependency
-  if (dbState.status !== "ready") return dbState;
-  const t0 = performance.now();
-  try {
-    const result = await dbState.conn.query(sql);
-    return { status: "ready", rows: rowsFromArrow(result), ms: performance.now() - t0 };
-  } catch (error) {
-    return { status: "error", error };
-  }
-}
+The same join, summarised by rurality code: how many counties sit at each
+RUCC level, and their mean screening rate. (A chart would show the gradient
+better; a table is what the page has for now.)
+
+```{.sql .runnable}
+SELECT r.value AS rucc_code, count(*) AS counties, round(avg(o.value), 1) AS mean_pct
+FROM measure.observation o
+JOIN measure.observation r
+  ON r.geo_id = o.geo_id AND r.source = 'RUCC' AND r.geo_id LIKE 'county:08%'
+WHERE o.source = 'PLACES' AND o.source_release = '2025'
+  AND o.measure_id = 'PLACES:COLON_SCREEN:age_adjusted'
+  AND o.geo_id LIKE 'county:08%'
+GROUP BY 1
+ORDER BY 1
 ```
 
-```{ojs}
-//| echo: false
-renderStatus(dbState, queryState)
-```
-
-```{ojs}
-//| echo: false
-queryState.status === "ready"
-  ? Inputs.table(queryState.rows, { columns: ["name", "pct", "lower", "upper", "value_status", "rucc_code"] })
-  : html`<p><em>Table will render once the query returns.</em></p>`
-```
-
-<details>
-<summary>SQL run for this table</summary>
-
-```{ojs}
-//| echo: false
-html`<pre><code>${sql}</code></pre>`
-```
-
-</details>
+Other measures to swap in for `measure_id`: `PLACES:MAMMOUSE:age_adjusted`
+(mammography use), `PLACES:CSMOKING:age_adjusted` (current smoking),
+`PLACES:CHECKUP:age_adjusted` (annual checkup), `PLACES:CANCER:age_adjusted`
+(cancer, non-skin, or melanoma). Use **Open in DuckDB Shell** to edit and run
+a block yourself, or the [SQL playground](/playground.qmd).
