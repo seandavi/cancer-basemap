@@ -32,9 +32,9 @@ release keeps its tag.
 
 ## Which one to use
 
-- **Exploring, or building something that should track the sources:** use `latest/`.
-- **An analysis you'll rerun soon:** pin a dated folder.
-- **A paper, a report, a shared pipeline, or anything that must stay reproducible or that you'll cite:** download the Hugging Face tag `YYYY-MM-DD`.
+- Exploring, or building something that should track the sources: use `latest/`.
+- An analysis you'll rerun soon: pin a dated folder.
+- A paper, a report, a shared pipeline, or anything that must stay reproducible or that you'll cite: download the Hugging Face tag `YYYY-MM-DD`.
 
 ## Pin a dated folder
 

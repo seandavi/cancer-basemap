@@ -25,11 +25,11 @@ ORDER BY source_release
 ```
 
 Two rows, same measure, same county (Denver County, CO). The **source
-release** is `'2024'` or `'2025'` — the PLACES edition. The **period** each
-release actually describes is one year *earlier*: the 2024 release models
+release** is `'2024'` or `'2025'`, the PLACES edition. The **period** each
+release describes is one year *earlier*: the 2024 release models
 2022 BRFSS data, the 2025 release models 2023 data. A query that filters on
 `source_release = '2025'` expecting "2025 data" is filtering on the release
-label, not the period — the value it gets describes 2023.
+label, not the period. The value it gets describes 2023.
 
 Both source releases are in every Cancer Basemap release, because
 `source_release` is a column, not a folder. The **Cancer Basemap release** is
@@ -42,7 +42,7 @@ dated folder, or its Hugging Face tag, is how you reproduce an analysis (see
 ## A second example: an edition's own period moves
 
 SVI's `source_release` **is** the edition, and each edition's own period is
-a five-year ACS window that moves with it — never the edition year alone. This
+a five-year ACS window that moves with it, never the edition year alone. This
 reads Colorado's counties only (`geo_id LIKE 'county:08%'`), which is enough to
 show every edition's period:
 
@@ -54,13 +54,13 @@ GROUP BY 1
 ORDER BY 1
 ```
 
-The 2020 edition's period is `2016`–`2020`, not `'2020'` alone — treating an
+The 2020 edition's period is `2016`–`2020`, not `'2020'` alone. Treating an
 edition's release year as its period would be off by up to four years.
 
 ## Why this matters for a catchment report
 
-The sentence a cancer center has to defend — *"in our catchment, as reported
-by source S in release R, the measure was X"* — names the release, not the
+The sentence a cancer center has to defend, *"in our catchment, as reported
+by source S in release R, the measure was X"*, names the release, not the
 period, on purpose: the release is what you can point back to when someone
 asks "where did this number come from." Reproducing a past analysis means
 filtering on `source_release`, not on `period_start`/`period_end` (a later

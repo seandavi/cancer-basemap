@@ -4,7 +4,7 @@ title: "Boundary vintages"
 
 County and tract boundaries change: counties split, merge, or get replaced
 entirely. A FIPS code without a vintage is an assembly name without a patch
-level — the same code can mean a different shape depending on when it was
+level. The same code can mean a different shape depending on when it was
 issued. Press **Run** under any block to execute it in your browser against
 the latest release.
 
@@ -35,7 +35,7 @@ ORDER BY 1
 ```
 
 Alaska's Valdez-Cordova Census Area (`02261`) splits into Chugach (`02063`)
-and Copper River (`02066`) starting with the 2020 edition — one row becomes
+and Copper River (`02066`) starting with the 2020 edition. One row becomes
 two, the +1 between the 2018 and 2020 counts.
 
 ```{.sql .runnable}
@@ -47,12 +47,12 @@ ORDER BY 1
 ```
 
 Connecticut's eight legacy counties persist through the 2020 edition; the
-nine 2022-vintage planning regions arrive with the 2022 edition — the +1
+nine 2022-vintage planning regions arrive with the 2022 edition. That is the +1
 between the 2020 and 2022 counts.
 
-The third real change in this window — South Dakota's Shannon County
-becoming Oglala Lakota County in 2015 — is a rename-and-recode, not a
-boundary change, so it doesn't move the county *count* at all; it shows up
+The third real change in this window is South Dakota's Shannon County
+becoming Oglala Lakota County in 2015. It is a rename-and-recode, not a
+boundary change, so it doesn't move the county *count* at all. It shows up
 instead as `fips` changing from `46113` to `46102` starting with the 2016
 edition, with the pre-2016 code still resolving through `geography.alias`:
 
@@ -68,9 +68,9 @@ Every fact in Cancer Basemap joins through `geography.unit` by `geo_id`, but a
 `geo_id` alone doesn't say which boundary edition it belongs to. `vintage`
 makes that explicit, and it's why every recipe on this site names a vintage
 on its geography join (`u.vintage = 2026`) instead of trusting a measure's
-own `geo_vintage` column — see [Time axes](time-axes.qmd) and
+own `geo_vintage` column (see [Time axes](time-axes.qmd) and
 [cancer-basemap#21](https://github.com/seandavi/cancer-basemap/issues/21) for
-the open question that makes this necessary today. `geography.alias`
+the open question that makes this necessary today). `geography.alias`
 resolves an old code that was renamed or recoded (not reshaped) to its
 current one, so a join on a retired code still finds its record instead of
 silently dropping it.

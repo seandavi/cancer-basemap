@@ -2,7 +2,7 @@
 title: "Suppression is a status"
 ---
 
-Surveillance sources hide small or unreliable numbers for good reasons —
+Surveillance sources hide small or unreliable numbers for good reasons:
 protecting privacy in a small population, avoiding an estimate too noisy to
 publish. But "hidden" is not the same fact as "missing," and a lot of
 downstream harm comes from collapsing the two into one blank cell.
@@ -21,7 +21,7 @@ downstream harm comes from collapsing the two into one blank cell.
 
 The invariant: **`value` is `NULL` whenever `value_status` is not
 `'reported'`, and never otherwise.** No reader has to parse a sentinel
-(`"*"`, `"3 or fewer"`, `-1`) to find out — and no reader can accidentally
+(`"*"`, `"3 or fewer"`, `-1`) to find out, and no reader can accidentally
 average a suppressed cell in as a zero, because there's no number there to
 average.
 
@@ -46,21 +46,21 @@ State Cancer Profiles carries most of the suppression in the release; the
 rows one by one.
 
 Two sources carry almost all of the suppression in the release. State Cancer
-Profiles' cancer counts are frequently small at the county level — its
-`suppressed_small_count` share dwarfs every other source's, exactly as
+Profiles' cancer counts are frequently small at the county level, and its
+`suppressed_small_count` share dwarfs every other source's, as
 expected for county-level cancer incidence and mortality. PLACES,
 model-based and published only above a minimum population threshold, has a
 much smaller suppressed slice. `not_available` on AHRF, FARA, RUCC and SVI
-is a blank source cell, not a suppression rule — the source simply didn't
+is a blank source cell, not a suppression rule. The source didn't
 publish a value for that unit (see each source's page in
 [Sources](/sources.qmd) for its own missing-value convention). `not_applicable`
-on RUCA marks a zero-population, no-identifier tract — a real "this
+on RUCA marks a zero-population, no-identifier tract, a real "this
 combination doesn't apply" case, not a hidden number.
 
 ## What this means for a query
 
 Never filter on `value IS NOT NULL` as a stand-in for "give me the real
-data" without also checking what's *behind* the NULLs you dropped — a county
+data" without also checking what's *behind* the NULLs you dropped. A county
 missing from your result because it's `suppressed_small_count` is a
 different finding than one missing because the source never covered it at
 all (`not_available`). The [suppressed-cells recipe](/recipes/suppressed-cells.qmd)

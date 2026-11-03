@@ -4,8 +4,8 @@ description: Every Cancer Basemap release available now, read live from R2 and H
 toc: false
 ---
 
-- **`latest/`** and the **dated folders** (`v{YYYY-MM-DD}/`, the newest of each of the last 12 months) are for querying in place: attach their `cancerbasemap.duckdb` or `read_parquet` a file. `restore.sql` builds a local copy (`duckdb cancerbasemap-local.duckdb < restore.sql`).
-- **Hugging Face tags** (`YYYY-MM-DD`) hold every release permanently. Download one with `hf download`, then query it locally, and cite the tag. See [Versions and citation](guides/versions-and-citation.qmd).
+- `latest/` and the dated folders (`v{YYYY-MM-DD}/`, the newest of each of the last 12 months) are for querying in place: attach their `cancerbasemap.duckdb` or `read_parquet` a file. `restore.sql` builds a local copy (`duckdb cancerbasemap-local.duckdb < restore.sql`).
+- Hugging Face tags (`YYYY-MM-DD`) hold every release permanently. Download one with `hf download`, then query it locally, and cite the tag. See [Versions and citation](guides/versions-and-citation.qmd).
 
 ::: {#releases}
 Loading releases…

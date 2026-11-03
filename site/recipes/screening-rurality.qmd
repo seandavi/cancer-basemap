@@ -33,7 +33,7 @@ ORDER BY pct
 LIMIT 20
 ```
 
-The same join, summarised by rurality code: how many counties sit at each
+The same join, summarized by rurality code: how many counties sit at each
 RUCC level, and their mean screening rate. (A chart would show the gradient
 better; a table is what the page has for now.)
 

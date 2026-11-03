@@ -1,26 +1,26 @@
 ---
-title: "The licence gate"
+title: "The license gate"
 ---
 
 A source is admitted only if it's redistributable by a third party,
 published as a complete dump per release, and aggregate-only. The check
-happens *before* ingest, not after — a source with an unresolved licence
-question doesn't land partially and get fixed later; it doesn't land.
+happens *before* ingest, not after. A source with an unresolved license
+question doesn't land partially and get fixed later. It doesn't land.
 
 ## What AHRF taught us
 
 HRSA's Area Health Resources Files (AHRF) topic page states, generically,
 "Usage limitations: None." Taken at face value, that would clear the whole
 4,352-column release. Reading AHRF's *own* bundled technical documentation
-instead of the topic page found something narrower — the documentation
+instead of the topic page found something narrower. The documentation
 states that data from the American Medical Association, American Hospital
 Association, and American Dental Association carry their own copyright and
 "may not be copied or reproduced in whole or in part without the prior
 consent of the copyright owner."
 
 `src/cancerbasemap/hrsa_ahrf.py` checks AHRF's own per-field source attribution
-for every one of its 45 distinct upstream sources and builds an **allowlist**
-— a column lands only if its source is confirmed clear, not by default. Press
+for every one of its 45 distinct upstream sources and builds an **allowlist**:
+a column lands only if its source is confirmed clear, not by default. Press
 **Run** to count the columns that did:
 
 ```{.sql .runnable}
@@ -28,13 +28,13 @@ SELECT count(DISTINCT column_name) AS columns_landed
 FROM raw.hrsa__ahrf
 ```
 
-The number it returns is what actually landed in `raw.hrsa__ahrf`.
+The number it returns is what landed in `raw.hrsa__ahrf`.
 
 That allowlist excludes 2,789 of AHRF's 4,352 columns, including **every**
-physician-specialty count (oncology, radiation oncology, gastroenterology —
+physician-specialty count (oncology, radiation oncology, gastroenterology;
 the AMA Physician Masterfile) and **every** hospital/bed count (the AHA
-Survey Database) — the exact fields the original ingest issue asked for.
-They're not landed, in raw or derived, under any circumstance. A handful of
+Survey Database). Those are the exact fields the original ingest issue asked for.
+They are not landed, in raw or derived, under any circumstance. A handful of
 other sources sit on a **review hold** rather than a finding of restriction:
 NCHS mortality and natality data (a vital-statistics data-use agreement,
 separate from federal copyright) and County Health Rankings (SPEC.md already
@@ -42,18 +42,18 @@ flags this source as unresolved repo-wide). See
 [`hrsa_ahrf.py`'s own docstring](/sources.qmd#src-hrsa_ahrf) for the full
 45-source table.
 
-## SDWIS: excluding personal data, not just copyrighted data
+## SDWIS: excluding personal data
 
-The licence gate isn't only about copyright. EPA's SDWIS public water
-systems file bundles an administrative-contact block — names, emails, phone
-numbers — for roughly half a million water systems, many of them small,
+The license gate also covers personal data. EPA's SDWIS public water
+systems file bundles an administrative-contact block (names, emails, phone
+numbers) for roughly half a million water systems, many of them small,
 privately owned systems where the "organization" field turns out to be a
 person's own name rather than a business. `src/cancerbasemap/epa_sdwis.py`
 checked this directly rather than assuming a column named `ORG_NAME` is
 organizational: of systems that are both privately owned and small, 30%
 have an `ORG_NAME` matching a `"LASTNAME, FIRSTNAME"` pattern, and 94% of
 those match the system's own personal `ADMIN_NAME` field exactly. Nine
-columns are excluded entirely — never landed, in raw or anywhere else. Press
+columns are excluded entirely and never landed, in raw or anywhere else. Press
 **Run** to look for them in the live table:
 
 ```{.sql .runnable}
@@ -65,21 +65,21 @@ WHERE column_name IN ('ADMIN_NAME', 'EMAIL_ADDR', 'PHONE_NUMBER', 'PHONE_EXT_NUM
 
 It should return 0 of the nine.
 
-SPEC.md and AGENTS.md both call for public *aggregates* only — this is that
-rule applied at the column level, not just the source level.
+SPEC.md and AGENTS.md both call for public *aggregates* only. This applies that
+rule at the column level as well as the source level.
 
 ## What's excluded repo-wide, and why
 
-From SPEC.md's own licence gate, unchanged by anything landed since:
+From SPEC.md's own license gate, unchanged by anything landed since:
 
-- **USCS county incidence via special access** — RDC-only or bilateral
-  access, the reason Cancer InFocus has county cancer incidence and a
+- USCS county incidence via special access: RDC-only or bilateral
+  access. This is why Cancer InFocus has county cancer incidence and a
   public dataset structurally cannot ([Cancer InFocus](cancer-infocus.qmd)
   covers what this means for the two projects' relationship).
-- **SEER Research / Research Plus data** — DUA per user.
-- **Registry microdata of any kind.**
-- **Area Deprivation Index** (Neighborhood Atlas) — registration-gated,
+- SEER Research / Research Plus data: DUA per user.
+- Registry microdata of any kind.
+- Area Deprivation Index (Neighborhood Atlas): registration-gated,
   redistribution terms unresolved; SPEC.md proposes a transparent,
   ACS-derived alternative instead of waiting on it.
-- **NaNDA, NHGIS crosswalks** — ICPSR/IPUMS terms; pointer-only until
+- NaNDA, NHGIS crosswalks: ICPSR/IPUMS terms; pointer-only until
   cleared.

@@ -39,7 +39,7 @@ VALID_FROM = (
 )
 VALID_TO = (
     "The Cancer Basemap release at which this version stopped being current, "
-    "exclusive. NULL means this is the current version — it does not mean "
+    "exclusive. NULL means this is the current version; it does not mean "
     "unknown. Queries wanting current data must filter on valid_to IS NULL; "
     "queries wanting release R want "
     "valid_from <= R AND (valid_to IS NULL OR valid_to > R). This is a "
@@ -88,7 +88,7 @@ class TableDef:
 
 NAMESPACES = {
     "raw": "Sources as landed, verbatim, per source release.",
-    "geography": "Units, vintages, crosswalks, aliases — the spine every fact joins through.",
+    "geography": "Units, vintages, crosswalks, aliases: the spine every fact joins through.",
     "population": "Denominators (SEER county/tract population, ACS universes).",
     "measure": "Every published number, in one stacked long table, plus its definitions.",
     "facility": "Places care happens (mammography, FQHC, providers, screening).",
@@ -113,16 +113,16 @@ TABLES = {
                         doc="Source key, e.g. scp, places, acs."),
             NestedField(3, "source_version", StringType(), required=True,
                         doc="The upstream version in the SOURCE'S OWN vocabulary, never "
-                            "normalised. Part of the business key together with release and "
+                            "normalized. Part of the business key together with release and "
                             "source (#78): several source releases can land under one catalog "
                             "release, and keying on (release, source) alone kept only the last "
-                            "one landed. Always populated — merge.manifest defaults it to the "
+                            "one landed. Always populated: merge.manifest defaults it to the "
                             "retrieval date when the source publishes no version label of its "
                             "own, so it is never NULL."),
             NestedField(4, "version_method", StringType(), required=True,
                         doc="How the version was determined: release_number, "
                             "http_last_modified, etag, ftp_index_probe, retrieval_date, "
-                            "unavailable. 'unavailable' is a legitimate value — a source that "
+                            "unavailable. 'unavailable' is a legitimate value: a source that "
                             "publishes no version is recorded as such, never given a "
                             "fabricated one."),
             NestedField(5, "retrieved_at", StringType(), required=True,
@@ -135,7 +135,7 @@ TABLES = {
         business_key=("release", "source", "source_version"),
         sort_by=("release", "source", "source_version"),
         comment="One row per (Cancer Basemap release, source, source_version): what this release "
-                "was built from. This is what makes a release reproducible — resolve it here to "
+                "was built from. This is what makes a release reproducible. Resolve it here to "
                 "each source's own version, then query each table at that release. Durable by "
                 "design: unlike Iceberg snapshot summaries it does not expire. Keyed on "
                 "source_version too (#78) so landing several source releases of one source "
@@ -210,8 +210,8 @@ TABLES = {
             NestedField(3, "fips", StringType(), doc="The bare code, without the level prefix."),
             NestedField(4, "vintage", IntegerType(), required=True,
                         doc="Boundary vintage year, e.g. 2020. Part of the business key: a FIPS "
-                            "code without a vintage is an assembly name without a patch level — "
-                            "boundaries move (Connecticut's 2022 move from counties to planning "
+                            "code without a vintage is an assembly name without a patch level. "
+                            "Boundaries move (Connecticut's 2022 move from counties to planning "
                             "regions, tract redraws each decennial census)."),
             NestedField(5, "name", StringType(), doc="Human-readable name."),
             NestedField(6, "parent_geo_id", StringType(),
@@ -222,7 +222,7 @@ TABLES = {
             NestedField(10, "centroid_lon", DoubleType(), doc="Centroid longitude, WGS84."),
             NestedField(11, "geometry_uri", StringType(),
                         doc="Pointer to the boundary geometry (GeoParquet / PMTiles on R2), not "
-                            "the geometry itself — geometry is referenced, never the primary "
+                            "the geometry itself. Geometry is referenced, never the primary "
                             "artifact (SPEC.md Non-goals). NULL where no geometry is pointed to "
                             "yet."),
             NestedField(12, "valid_from", StringType(), required=True, doc=VALID_FROM),
@@ -230,7 +230,7 @@ TABLES = {
         ),
         business_key=("geo_id", "vintage"),
         sort_by=("vintage", "level", "geo_id"),
-        comment="Geography — the spine every fact joins through (SPEC.md § Geography). Every "
+        comment="Geography: the spine every fact joins through (SPEC.md § Geography). Every "
                 "level and vintage Census has ever drawn, one row per unit per vintage, with "
                 "full Type-2 history via valid_from/valid_to.",
     ),
@@ -261,7 +261,7 @@ TABLES = {
         business_key=("measure_id",),
         sort_by=("measure_id",),
         comment="One row per published measure definition (SPEC.md § Measures). A lookup "
-                "table, not versioned in place — replaced wholesale per source via merge.write.",
+                "table, not versioned in place, replaced wholesale per source via merge.write.",
     ),
 
     "measure.stratum": TableDef(
@@ -273,7 +273,7 @@ TABLES = {
             NestedField(4, "age_group", StringType(), doc="Source-native age group, or NULL."),
             NestedField(5, "race_ethnicity", StringType(),
                         doc="Source-native race/ethnicity category, or NULL. Never harmonized "
-                            "in place — mappings live in measure.stratum_map instead "
+                            "in place; mappings live in measure.stratum_map instead "
                             "(SPEC.md § Measures)."),
             NestedField(6, "stage", StringType(), doc="Source-native disease stage, or NULL."),
             NestedField(7, "other", StringType(), doc="Any other source-native stratifier."),
@@ -296,7 +296,7 @@ TABLES = {
                             "of the business key and of every writer's merge scope, so "
                             "providers stack in one table and none can retire another's rows."),
             NestedField(2, "source_release", StringType(), required=True,
-                        doc="The upstream edition that published this value — a vintage or "
+                        doc="The upstream edition that published this value, a vintage or "
                             "release label (SPEC.md § Versioning model), distinct from the "
                             "period the value describes and from valid_from/valid_to."),
             NestedField(3, "measure_id", StringType(), required=True,
@@ -314,8 +314,8 @@ TABLES = {
             NestedField(8, "stratum_id", StringType(), required=True,
                         doc="FK measure.stratum."),
             NestedField(9, "value", DoubleType(),
-                        doc="The published value. NULL whenever value_status != 'reported' — "
-                            "no suppressed cell ever reads as a number (SPEC.md Acceptance C)."),
+                        doc="The published value. NULL whenever value_status != 'reported'. "
+                            "No suppressed cell ever reads as a number (SPEC.md Acceptance C)."),
             NestedField(10, "lower", DoubleType(), doc="Interval lower bound, when published."),
             NestedField(11, "upper", DoubleType(), doc="Interval upper bound, when published."),
             NestedField(12, "interval_level", DoubleType(),
@@ -340,7 +340,7 @@ TABLES = {
         partition_by=("source",),
         sort_by=("source_release", "measure_id", "geo_id", "period_start", "stratum_id"),
         comment="Every published number, one stacked long table across sources (SPEC.md § "
-                "Measures). Merge scope is (source, source_release) — a new SCP vintage never "
+                "Measures). Merge scope is (source, source_release): a new SCP vintage never "
                 "retires a PLACES row. Full Type-2 history via valid_from/valid_to.",
     ),
 
@@ -384,7 +384,7 @@ TABLES = {
         comment="Census Gazetteer county file landed verbatim and whole, every column, one row "
                 "per county-equivalent per vintage year. Three real upstream layouts (2010 with "
                 "POP10/HU10, 2011-2024 without them, 2025+ with GEOIDFQ and a pipe delimiter) "
-                "land into this one union schema; absent columns are NULL. Licence: U.S. "
+                "land into this one union schema; absent columns are NULL. License: U.S. "
                 "government work, public domain (17 U.S.C. § 105).",
     ),
 
@@ -419,9 +419,9 @@ TABLES = {
         ),
         sort_by=("gazetteer_year", "geoid"),
         comment="Census Gazetteer tract file landed verbatim and whole, every column, one row "
-                "per census tract per vintage year. The tract file carries no NAME column — "
+                "per census tract per vintage year. The tract file carries no NAME column; "
                 "tracts are numbered, not named. Three real upstream layouts, same union-schema "
-                "treatment as raw.census__gazetteer_counties. Licence: U.S. government work, "
+                "treatment as raw.census__gazetteer_counties. License: U.S. government work, "
                 "public domain (17 U.S.C. § 105).",
     ),
 
@@ -438,9 +438,9 @@ TABLES = {
         sort_by=("state",),
         comment="Census's state/state-equivalent FIPS code reference "
                 "(https://www2.census.gov/geo/docs/reference/state.txt), landed whole and replaced "
-                "wholesale each time — not versioned by gazetteer year, since FIPS-to-state "
+                "wholesale each time, not versioned by gazetteer year, since FIPS-to-state "
                 "assignment doesn't move on that cadence. Feeds geography.unit's state-level "
-                "names. Licence: U.S. government work, public domain (17 U.S.C. § 105).",
+                "names. License: U.S. government work, public domain (17 U.S.C. § 105).",
     ),
 
     # --- raw: census gazetteer districts ---
@@ -466,7 +466,7 @@ TABLES = {
             NestedField(10, "gazetteer_year", IntegerType(), required=True,
                         doc="The gazetteer vintage year this row was published under. Census "
                             "labels the underlying CD file with the Congress number that vintage "
-                            "serves (census_gazetteer.CD_CONGRESS), not this year — this column is "
+                            "serves (census_gazetteer.CD_CONGRESS), not this year. This column is "
                             "geography.unit's boundary vintage, kept parallel to every other "
                             "level. Raw is replaced wholesale per value of this column."),
             NestedField(11, "landed_in", StringType(), required=True,
@@ -475,7 +475,7 @@ TABLES = {
         sort_by=("gazetteer_year", "geoid"),
         comment="Census Gazetteer congressional-district (CD) file landed verbatim and whole, one "
                 "row per district per vintage year (SPEC.md § Geography; #104). No NAME column "
-                "(census_gazetteer.transform synthesizes one). Licence: U.S. government work, "
+                "(census_gazetteer.transform synthesizes one). License: U.S. government work, "
                 "public domain (17 U.S.C. § 105).",
     ),
 
@@ -504,7 +504,7 @@ TABLES = {
         ),
         sort_by=("gazetteer_year", "geoid"),
         comment="Census Gazetteer state-legislative upper-chamber (SLDU) file landed verbatim and "
-                "whole, one row per district per vintage year (SPEC.md § Geography; #104). Licence: "
+                "whole, one row per district per vintage year (SPEC.md § Geography; #104). License: "
                 "U.S. government work, public domain (17 U.S.C. § 105).",
     ),
 
@@ -533,7 +533,7 @@ TABLES = {
         ),
         sort_by=("gazetteer_year", "geoid"),
         comment="Census Gazetteer state-legislative lower-chamber (SLDL) file landed verbatim and "
-                "whole, one row per district per vintage year (SPEC.md § Geography; #104). Licence: "
+                "whole, one row per district per vintage year (SPEC.md § Geography; #104). License: "
                 "U.S. government work, public domain (17 U.S.C. § 105).",
     ),
 
@@ -564,7 +564,7 @@ TABLES = {
             NestedField(9, "Data_Value_Type", StringType(),
                         doc="'Crude prevalence' or 'Age-adjusted prevalence'."),
             NestedField(10, "Data_Value", StringType(),
-                        doc="The published estimate, unparsed; empty (NULL) when suppressed — "
+                        doc="The published estimate, unparsed; empty (NULL) when suppressed; "
                             "see Data_Value_Footnote."),
             NestedField(11, "Data_Value_Footnote_Symbol", StringType(),
                         doc="Footnote marker on Data_Value, or NULL."),
@@ -576,7 +576,7 @@ TABLES = {
                         doc="95% CI upper bound, unparsed."),
             NestedField(15, "TotalPopulation", StringType(),
                         doc="Total population of the location, per the source's own population "
-                            "estimate. NOT this measure's denominator — PLACES publishes no "
+                            "estimate. NOT this measure's denominator. PLACES publishes no "
                             "numerator/denominator pair; kept for reference only."),
             NestedField(16, "TotalPop18plus", StringType(),
                         doc="Adult (18+) population of the location, per the source's own "
@@ -616,7 +616,7 @@ TABLES = {
     "raw.ers__rucc": TableDef(
         schema=Schema(
             NestedField(1, "FIPS", StringType(), required=True,
-                        doc="5-digit county (or county-equivalent) FIPS code, as published — "
+                        doc="5-digit county (or county-equivalent) FIPS code, as published, "
                             "zero-padded string, e.g. '01001'."),
             NestedField(2, "State", StringType(), required=True, doc="USPS state abbreviation."),
             NestedField(3, "County_Name", StringType(), required=True,
@@ -624,14 +624,14 @@ TABLES = {
             NestedField(4, "Attribute", StringType(), required=True,
                         doc="Which fact this row carries: 'Population_2020', "
                             "'RUCC_<edition>' (e.g. 'RUCC_2023'), or 'Description'. Long "
-                            "format — one row per (FIPS, Attribute)."),
+                            "format: one row per (FIPS, Attribute)."),
             NestedField(5, "Value", StringType(),
                         doc="The value for Attribute, unparsed. NULL only where the source "
                             "cell itself is blank; a FIPS entirely missing an Attribute row "
                             "(e.g. no RUCC_2023 for a zero-population entity) is absent from "
                             "this table rather than present with a NULL Value."),
             NestedField(6, "rucc_edition", StringType(), required=True,
-                        doc="The RUCC edition this row was published in, e.g. '2023' — the "
+                        doc="The RUCC edition this row was published in, e.g. '2023'; the "
                             "version axis for this source. Raw is replaced wholesale per "
                             "value of this column."),
             NestedField(7, "landed_in", StringType(), required=True,
@@ -673,10 +673,10 @@ TABLES = {
         ),
         sort_by=("old_fips", "new_fips"),
         comment="Curated CSV of Census 'Substantial Changes to Counties' name/code changes "
-                "(county_recodes.csv, committed in the package — the upstream is prose, not a "
+                "(county_recodes.csv, committed in the package; the upstream is prose, not a "
                 "data file), landed verbatim and whole. Replaced wholesale each time it is "
-                "re-curated, like raw.census__state_fips — there is no upstream edition to key "
-                "an overwrite scope on. Licence: U.S. government work, public domain "
+                "re-curated, like raw.census__state_fips; there is no upstream edition to key "
+                "an overwrite scope on. License: U.S. government work, public domain "
                 "(17 U.S.C. § 105).",
     ),
 
@@ -684,7 +684,7 @@ TABLES = {
         schema=Schema(
             NestedField(1, "old_geo_id", StringType(), required=True,
                         doc="geography.unit-style id ('county:<fips>') before the change. Part "
-                            "of the business key together with new_geo_id. Carries no vintage — "
+                            "of the business key together with new_geo_id. Carries no vintage: "
                             "unlike geography.unit, an alias is a pure code mapping a join "
                             "resolves regardless of which vintage the observation came from."),
             NestedField(2, "new_geo_id", StringType(), required=True,
@@ -694,7 +694,7 @@ TABLES = {
                         doc="Calendar year the change took effect, e.g. 2015."),
             NestedField(4, "change_type", StringType(), required=True,
                         doc="One of: recode (code changed, name did not), rename (name changed, "
-                            "code did not — not useful for resolving a join, since old_geo_id "
+                            "code did not; not useful for resolving a join, since old_geo_id "
                             "would equal new_geo_id, so none are seeded), recode_and_rename "
                             "(both changed, e.g. Shannon -> Oglala Lakota County)."),
             NestedField(5, "old_name", StringType(), required=True, doc="Name before the change."),
@@ -3303,7 +3303,7 @@ TABLES = {
     # --- raw: hrsa ahrf ---
     # HRSA Area Health Resources Files, county (#39). Landed LONG (one row per
     # county/field cell) rather than one wide row per county -- see
-    # hrsa_ahrf.py's docstring for why, and for the licence finding that
+    # hrsa_ahrf.py's docstring for why, and for the license finding that
     # excludes every AMA/AHA/ADA-sourced column (physician-specialty and
     # hospital/bed counts) from this table entirely.
     "raw.hrsa__ahrf": TableDef(
@@ -3335,8 +3335,8 @@ TABLES = {
         comment="HRSA Area Health Resources Files (AHRF), county level, landed LONG: one row "
                 "per (county, field) cell rather than one enormously wide row per county "
                 "(SPEC.md § Sources -- first tranche). Landed WHOLE for every field not withheld "
-                "on licence grounds -- 'whole' as SPEC.md ADR-0002 uses it, at cell granularity "
-                "rather than one wide table; public-domain federal-origin fields only. Licence: "
+                "on license grounds -- 'whole' as SPEC.md ADR-0002 uses it, at cell granularity "
+                "rather than one wide table; public-domain federal-origin fields only. License: "
                 "U.S. government work, public domain (17 U.S.C. Sec 105) for every field landed "
                 "here. Fields sourced from the AMA Physician Masterfile, AHA hospital survey, or "
                 "ADA Masterfile are copyrighted third-party content and are never landed.",
@@ -3443,7 +3443,7 @@ TABLES = {
 
     "raw.hrsa__hpsa_primary_care": TableDef(
         schema=Schema(
-            NestedField(1, "HPSA Name", StringType(), doc="Shortage area's own name -- an organisation/place name, never an individual."),
+            NestedField(1, "HPSA Name", StringType(), doc="Shortage area's own name -- an organization/place name, never an individual."),
             NestedField(2, "HPSA ID", StringType(), required=True, doc="HRSA's designation id."),
             NestedField(3, "Designation Type", StringType(), required=True,
                         doc="'Geographic HPSA' | 'High Needs Geographic HPSA' (the only two counted into "
@@ -3904,7 +3904,7 @@ TABLES = {
                         doc="Source-native race/ethnicity category, as published -- a "
                             "DIFFERENT vocabulary than incidence/mortality's race column "
                             "(includes a verbatim upstream misspelling, 'Asian /Pacifice "
-                            "Islander (Non-Hispanic)'); never harmonised."),
+                            "Islander (Non-Hispanic)'); never harmonized."),
             NestedField(12, "sex", StringType(),
                         doc="'Both Sexes' | 'Male' | 'Female', as published."),
             NestedField(13, "datatype", StringType(),
@@ -4501,7 +4501,7 @@ TABLES = {
     "raw.fda__mqsa_facilities": TableDef(
         schema=Schema(
             NestedField(1, "Facility Name", StringType(), required=True,
-                        doc="Facility's own name. Normalised and hashed into facility.site.facility_id "
+                        doc="Facility's own name. Normalized and hashed into facility.site.facility_id "
                             "(no id column exists in this file -- see fda_mqsa.py); also facility.site.name."),
             NestedField(2, "Address 1", StringType(), doc="Street address line 1; part of facility.site.address and facility_id."),
             NestedField(3, "Address 2", StringType(), doc="Street address line 2, often NULL; part of facility.site.address and facility_id."),
@@ -4991,7 +4991,7 @@ TABLES = {
         sort_by=("ejscreen_edition", "geo_id"),
         comment="EPA EJScreen tract file, landed verbatim and whole per edition (2021-2024 "
                 "only -- EPA's own separate tract product, not a block-group aggregation "
-                "this module computes). Same licence as raw.ejscreen__blockgroup. The only "
+                "this module computes). Same license as raw.ejscreen__blockgroup. The only "
                 "level derived into measure.observation today (ejscreen.py module docstring).",
     ),
 
@@ -5232,7 +5232,7 @@ TABLES = {
             NestedField(7, "COUNTY", StringType(),
                         doc="County (or parish/municipio/borough/census area) name as EPA "
                             "publishes it -- no FIPS column exists in this file. Matched against "
-                            "geography.unit by normalised name + state to derive "
+                            "geography.unit by normalized name + state to derive "
                             "facility.site.geo_id / measure.observation.geo_id; see epa_tri.py's "
                             "module docstring for the match rule and its real, reported miss rate."),
             NestedField(8, "ST", StringType(), doc="USPS state/territory abbreviation."),
@@ -5245,15 +5245,15 @@ TABLES = {
                         doc="Unparsed; facility.site.lon (TRY_CAST to double)."),
             NestedField(14, "HORIZONTAL DATUM", StringType(), doc="Geodetic datum of LATITUDE/LONGITUDE, as published."),
             NestedField(15, "PARENT CO NAME", StringType(),
-                        doc="Parent company's own name, as self-reported. An organisation, not an "
+                        doc="Parent company's own name, as self-reported. An organization, not an "
                             "individual (verified against the real header and EPA's field "
                             "definitions 2026-09-19 -- see module docstring)."),
             NestedField(16, "PARENT CO DB NUM", StringType(), doc="Parent company D&B number, when reported."),
-            NestedField(17, "STANDARD PARENT CO NAME", StringType(), doc="EPA-standardised form of PARENT CO NAME."),
+            NestedField(17, "STANDARD PARENT CO NAME", StringType(), doc="EPA-standardized form of PARENT CO NAME."),
             NestedField(18, "FOREIGN PARENT CO NAME", StringType(), doc="Foreign parent company name, when applicable."),
             NestedField(19, "FOREIGN PARENT CO DB NUM", StringType(), doc="Foreign parent company D&B number, when reported."),
             NestedField(20, "STANDARD FOREIGN PARENT CO NAME", StringType(),
-                        doc="EPA-standardised form of FOREIGN PARENT CO NAME."),
+                        doc="EPA-standardized form of FOREIGN PARENT CO NAME."),
             NestedField(21, "FEDERAL FACILITY", StringType(), doc="'YES'/'NO', as published."),
             NestedField(22, "INDUSTRY SECTOR CODE", StringType(), doc="NAICS-sector-derived TRI industry sector code."),
             NestedField(23, "INDUSTRY SECTOR", StringType(), doc="TRI industry sector name."),
@@ -5632,7 +5632,7 @@ TABLES = {
                 "(WKB), one row per shapefile record (69, incl. two summary rows). Source: National "
                 "Cancer Institute, GIS Portal for Cancer Research; cite DelNero et al., CEBP 2022, "
                 "doi:10.1158/1055-9965.EPI-21-1230. A U.S. Government work (17 U.S.C. § 105); "
-                "licence cleared by the owner (#195).",
+                "license cleared by the owner (#195).",
     ),
 
     "catchment.center": TableDef(
