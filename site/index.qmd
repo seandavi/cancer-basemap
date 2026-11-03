@@ -116,8 +116,8 @@ the NCI-designated centers. What none of them is built to do is hand you
 numbers from several sources, joined on the same county or tract, with the
 release that produced each one still attached and still queryable after the
 next one lands. Cancer Basemap is a thin layer for that, and nothing more:
-versioned, joinable, citable numbers across sources, and the tools above can
-read from it.
+versioned, joinable, citable numbers across sources, which the tools above
+could read from.
 
 ## What you can do with it
 
