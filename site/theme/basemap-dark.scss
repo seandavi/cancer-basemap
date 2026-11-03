@@ -33,3 +33,6 @@ $code-color: #7dd3fc;
   --bs-btn-active-color: #fff; --bs-btn-active-bg: #075985; --bs-btn-active-border-color: #075985;
 }
 .btn-outline-secondary { --bs-btn-color: #cbd5e1; --bs-btn-border-color: #64748b; }
+// Observable Plot paints its legend swatch strip on a white background, where
+// the inherited light text is 1.2:1.
+svg[class^="plot-"] { background: transparent !important; }
