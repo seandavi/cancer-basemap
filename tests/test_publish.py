@@ -1,4 +1,9 @@
-"""`cancerbasemap publish`: a release bundle from the local sqlite warehouse, offline."""
+"""`cancerbasemap publish`: a release bundle from the local sqlite warehouse, offline.
+
+The bundle mechanics are cdsci.publish's and tested there (cdsci-lake); this covers the
+cancer policy on top: which rows a type-2 table ships, the declared docs, the table list,
+measure.observation's layout, and the new-directory guard.
+"""
 
 import json
 
@@ -48,34 +53,25 @@ def test_type2_table_ships_current_rows_without_validity_columns(con, tmp_path):
     assert "current rows only" in alias["comment"]
 
 
-def test_raw_and_provenance_ship_whole_and_manifest_counts_match(con, tmp_path):
+def test_raw_and_provenance_ship_whole_with_the_declared_docs(con, tmp_path):
     out = tmp_path / "release"
     m = publish.publish(con, out, out.as_uri(), ONLY)
 
-    assert json.loads((out / "manifest.json").read_text()) == json.loads(json.dumps(m, default=str))
-    assert len(m["release"]) == 10
+    assert m["manifest_version"] == 1
     want = {"geography.alias": 2,
             "raw.geography__county_recodes": con.sql("SELECT count(*) FROM coi.raw.geography__county_recodes").fetchone()[0],
             "provenance.release": con.sql("SELECT count(*) FROM coi.provenance.release").fetchone()[0]}
     assert {f"{t['schema']}.{t['table']}": t["row_count"] for t in m["tables"]} == want
-    for t in m["tables"]:
-        assert t["bytes"] == (out / t["path"]).stat().st_size and len(t["sha256"]) == 64
-    # per-source provenance from provenance.release
+    # per-source provenance from provenance.release, dates serialised
     assert {p["source"] for p in m["provenance"]} == {"geography_alias"}
-    assert "git_sha" in m and "base_url" in m
+    assert json.loads((out / "manifest.json").read_text())["provenance"] == json.loads(json.dumps(m["provenance"], default=str))
 
-    # the views in cancerbasemap.duckdb resolve against the written Parquet
+    # the declared column docs reach cancerbasemap.duckdb
     db = duckdb.connect()
     db.execute(f"ATTACH '{out / publish.DB_FILE}' AS rel (READ_ONLY)")
-    assert {n: db.sql(f"SELECT count(*) FROM rel.{n}").fetchone()[0] for n in want} == want
     docs = dict(db.sql("SELECT column_name, comment FROM duckdb_columns() WHERE database_name = 'rel' "
                        "AND schema_name = 'geography' AND table_name = 'alias'").fetchall())
     assert docs["change_type"].startswith("One of: recode")
-
-    # restore.sql builds a local copy and checks it against manifest.json
-    local = duckdb.connect()
-    local.execute((out / "restore.sql").read_text())
-    assert local.sql("SELECT count(*) FROM geography.alias").fetchone()[0] == 2
 
 
 def test_every_declared_table_is_published_unless_excluded_with_a_reason():
@@ -102,20 +98,6 @@ def test_a_non_empty_output_directory_is_refused(con, tmp_path):
     with pytest.raises(ValueError, match="not empty"):
         publish.publish(con, out, out.as_uri(), ["geography.alias"])
     assert len(json.loads((out / "manifest.json").read_text())["tables"]) == len(ONLY)
-
-
-def test_views_keep_the_https_url_before_it_is_uploaded(con, tmp_path):
-    out = tmp_path / "release"
-    publish.publish(con, out, "https://basemap.example.org/data/latest/", ["geography.alias"])
-    url = "https://basemap.example.org/data/latest/geography/alias.parquet"
-    assert f"read_parquet('{url}')" in (out / "views.sql").read_text()
-    db = duckdb.connect(str(out / publish.DB_FILE), read_only=True)
-    assert url in db.sql("SELECT sql FROM duckdb_views() WHERE view_name = 'alias'").fetchone()[0]
-
-
-def test_unknown_table_is_refused(con, tmp_path):
-    with pytest.raises(ValueError, match="not a published table"):
-        publish.publish(con, tmp_path, tmp_path.as_uri(), ["geography.nope"])
 
 
 def test_observation_is_written_clustered_by_geography_level_and_state(tmp_path):

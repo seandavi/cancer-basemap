@@ -8,9 +8,10 @@ dependencies = [
     "pyiceberg[sql-sqlite,pyarrow]>=0.9",
     "sqlglot>=30.18.0",
     "xlrd>=2.0.2",
-    # publish.py serves http(s) reads from the bundle dir while building cancerbasemap.duckdb;
-    # already installed by pyiceberg, declared because we import it.
-    "fsspec",
+    # Release-bundle mechanics (Parquet + views.sql + restore.sql + manifest.json) shared with
+    # biocOnIce, cdsci-lake ADR-0027. Pinned to a cdsci-lake rev; cancerbasemap does not
+    # depend on cdsci-lake itself.
+    "cdsci-publish",
     # hf.py (ADR-0001 § Hugging Face): every gated release is one create_commit + tag, uploaded
     # through Xet (hf-xet comes with it), as biocOnIce and omicidx do. Same pin.
     "huggingface-hub>=2.2.0",
@@ -18,6 +19,9 @@ dependencies = [
 
 [project.scripts]
 cancerbasemap = "cancerbasemap.__main__:main"
+
+[tool.uv.sources]
+cdsci-publish = { git = "https://github.com/seandavi/cdsci-lake", rev = "5a40ab9c71de2964d7d7ae658651524189dc1d25", subdirectory = "packages/cdsci-publish" }
 
 [dependency-groups]
 dev = ["pytest>=8"]
