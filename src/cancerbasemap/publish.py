@@ -74,19 +74,9 @@ def _docs(name):
     return d.comment + (HISTORY_NOTE if versioned else ""), {f.name: f.doc for f in d.schema.fields if f.doc}
 
 
-def _lit(s):
-    return "'" + s.replace("'", "''") + "'"
-
-
 def publish(con, out: Path, base_url: str = DEFAULT_BASE_URL, only=None) -> dict:
-    """Build one release bundle in `out` from `con`, which has the catalog attached as `coi`.
-
-    `out` must be new or empty, so nothing from an earlier run sits beside a manifest that
-    does not list it (biocOnIce's release script re-runs into one directory; ours does not).
-    """
-    if out.exists() and any(out.iterdir()):
-        raise ValueError(f"{out} is not empty: publish into a new directory")
-    out.mkdir(parents=True, exist_ok=True)
+    """Build one release bundle in `out` (new or empty) from `con`, which has the catalog
+    attached as `coi`."""
     return cdsci.publish.publish(con, out, tables=TABLES, docs=_docs, base_url=base_url,
                                  db_file=DB_FILE, code_dir=Path(__file__).parent,
                                  provenance_sql=PROVENANCE_SQL, only=only)
