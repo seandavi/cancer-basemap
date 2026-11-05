@@ -2,7 +2,7 @@
 
 The bundle mechanics are cdsci.publish's and tested there (cdsci-lake); this covers the
 cancer policy on top: which rows a type-2 table ships, the declared docs, the table list,
-measure.observation's layout, and the new-directory guard.
+and measure.observation's layout.
 """
 
 import json
@@ -90,14 +90,6 @@ def test_selects_drop_history_only_for_type_2_tables():
     assert {n for n, q in sql.items() if "valid_to" in q} == {
         "geography.unit", "geography.alias", "measure.observation", "measure.cancer_site",
         "measure.cancer_site_group", "facility.site", "catchment.center", "catchment.member"}
-
-
-def test_a_non_empty_output_directory_is_refused(con, tmp_path):
-    out = tmp_path / "release"
-    publish.publish(con, out, out.as_uri(), ONLY)
-    with pytest.raises(ValueError, match="not empty"):
-        publish.publish(con, out, out.as_uri(), ["geography.alias"])
-    assert len(json.loads((out / "manifest.json").read_text())["tables"]) == len(ONLY)
 
 
 def test_observation_is_written_clustered_by_geography_level_and_state(tmp_path):

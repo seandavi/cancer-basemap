@@ -1,16 +1,17 @@
-"""`cancerbasemap gate`: a release bundle against the previous release, offline (#172).
+"""`cancerbasemap gate`: the cancer policy on top of cdsci.publish.gate, offline (#172).
 
-Bundles are tiny Parquet + manifest.json in the `publish` layout, under tmp_path.
+The mechanics (manifest vs Parquet, missing tables, column drift, reference fetch, gate.json
+binding) are tested in cdsci-lake; this covers the hard gate, the row bounds, the README
+fence, the User-Agent and the CLI wiring. Bundles are tiny Parquet + manifest.json in the
+`publish` layout, under tmp_path.
 """
 
 import hashlib
 import io
 import json
 import sys
-import threading
 import urllib.error
-from functools import partial
-from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+import urllib.request
 
 import duckdb
 import pytest
@@ -75,7 +76,7 @@ def test_clean_bundle_passes_and_gate_json_binds_the_manifest(tmp_path, referenc
     monkeypatch.setattr(gate, "README", readme)
     assert _run(monkeypatch, str(bundle), "--reference", reference.as_uri()) == 0
     out = capsys.readouterr().out
-    assert out.startswith(f"release 2026-11-01 against {reference.as_uri()} (release 2026-10-01)\n")
+    assert f"release 2026-11-01 against {reference.as_uri()} (release 2026-10-01)\n" in out
     assert "  ok    value_null_unless_reported" in out and out.endswith("PASS\n")
     assert "marks no ```sql bundle queries: skipping" in out
     g = json.loads((bundle / gate.GATE_FILE).read_text())
@@ -102,35 +103,10 @@ def test_source_published_numbers_beside_a_null_value_pass(tmp_path, reference, 
     assert _run(monkeypatch, str(bundle), "--reference", reference.as_uri()) == 0
 
 
-def test_a_table_missing_from_the_bundle_fails(tmp_path, reference, monkeypatch, capsys):
-    bundle = _bundle(tmp_path / "candidate", "2026-11-01",
-                     {"measure.observation": OBSERVATION.format(value="NULL")})
-    assert _run(monkeypatch, str(bundle), "--reference", reference.as_uri()) == 1
-    assert "  FAIL  present" in capsys.readouterr().out
-
-
-def test_row_count_outside_bounds_and_schema_drift_fail(tmp_path, reference, monkeypatch, capsys):
-    bundle = _bundle(tmp_path / "candidate", "2026-11-01", {
-        "measure.observation": OBSERVATION.format(value="NULL"),
-        "geography.unit": "SELECT i::VARCHAR AS id FROM range(10) t(i)"})
-    assert _run(monkeypatch, str(bundle), "--reference", reference.as_uri()) == 1
-    out = capsys.readouterr().out
-    assert "  FAIL  row_count_bounds  (10 rows, reference 30)" in out
-    assert "  FAIL  schema_unchanged" in out
-
-
-def test_a_reference_not_older_than_the_bundle_is_refused(reference, monkeypatch, capsys):
-    assert _run(monkeypatch, str(reference), "--reference", reference.as_uri()) == 1
-    assert "is not older than 2026-10-01" in capsys.readouterr().out
-
-
-def test_manifest_row_count_that_disagrees_with_its_parquet_fails(tmp_path, monkeypatch, capsys):
-    bundle = candidate(tmp_path)
-    m = json.loads((bundle / "manifest.json").read_text())
-    m["tables"][1]["row_count"] = 31
-    (bundle / "manifest.json").write_text(json.dumps(m))
+def test_a_bundle_without_measure_observation_fails_the_hard_gate(tmp_path, monkeypatch, capsys):
+    bundle = _bundle(tmp_path / "candidate", "2026-11-01", {"geography.unit": GEO.format(n=33)})
     assert _run(monkeypatch, str(bundle), "--reference", "none") == 1
-    assert "  FAIL  manifest_row_count  (parquet 33, manifest 31)" in capsys.readouterr().out
+    assert "  FAIL  value_null_unless_reported  (measure.observation is not in the bundle)" in capsys.readouterr().out
 
 
 def test_reference_none_runs_bundle_checks_only(tmp_path, monkeypatch, capsys):
@@ -138,19 +114,6 @@ def test_reference_none_runs_bundle_checks_only(tmp_path, monkeypatch, capsys):
     assert _run(monkeypatch, str(bundle), "--reference", "none") == 0
     assert "bundle checks only, no reference given" in capsys.readouterr().out
     assert json.loads((bundle / gate.GATE_FILE).read_text())["reference"] is None
-
-
-def test_no_published_release_404_runs_bundle_checks_only(tmp_path, monkeypatch, capsys):
-    served = tmp_path / "served"
-    served.mkdir()
-    server = ThreadingHTTPServer(("127.0.0.1", 0), partial(SimpleHTTPRequestHandler, directory=str(served)))
-    threading.Thread(target=server.serve_forever, daemon=True).start()
-    url = f"http://127.0.0.1:{server.server_port}/data/latest"
-    try:
-        assert _run(monkeypatch, str(candidate(tmp_path)), "--reference", url) == 0
-    finally:
-        server.shutdown()
-    assert f"bundle checks only, no published release at {url}" in capsys.readouterr().out
 
 
 def test_readme_queries_run_only_when_marked_for_the_bundle(tmp_path, monkeypatch, capsys):
@@ -161,6 +124,10 @@ def test_readme_queries_run_only_when_marked_for_the_bundle(tmp_path, monkeypatc
     monkeypatch.setattr(gate, "README", readme)
     assert _run(monkeypatch, str(candidate(tmp_path)), "--reference", "none") == 0
     assert "  ok    readme_query_line_6  (1 rows)" in capsys.readouterr().out
+
+
+def test_the_real_readme_marks_bundle_queries():
+    assert gate.readme_queries(), f"{gate.README} marks no ```sql bundle query for the gate to run"
 
 
 def _observation_bundle(tmp_path, sql):
@@ -175,21 +142,6 @@ def test_a_null_value_status_fails_the_hard_gate(tmp_path, monkeypatch, capsys):
     assert not (bundle / gate.GATE_FILE).exists()
 
 
-def test_a_manifest_changed_during_the_check_is_not_certified(tmp_path, monkeypatch, capsys):
-    bundle = candidate(tmp_path)
-    real = gate.bundle_checks
-
-    def mutate(*args):
-        m = json.loads((bundle / "manifest.json").read_text())
-        (bundle / "manifest.json").write_text(json.dumps({**m, "release": "2026-11-02"}))
-        return real(*args)
-
-    monkeypatch.setattr(gate, "bundle_checks", mutate)
-    assert _run(monkeypatch, str(bundle), "--reference", "none") == 1
-    assert "manifest.json changed while the gate ran" in capsys.readouterr().out
-    assert not (bundle / gate.GATE_FILE).exists()
-
-
 def test_a_missing_readme_skips_the_readme_checks(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(gate, "README", tmp_path / "nonexistent" / "README.md")
     assert _run(monkeypatch, str(candidate(tmp_path)), "--reference", "none") == 0
@@ -198,8 +150,8 @@ def test_a_missing_readme_skips_the_readme_checks(tmp_path, monkeypatch, capsys)
 
 @pytest.mark.parametrize("ref_rows, rows, code, expect", [
     (0, 5, 0, "  ok    row_count_growth"),
-    (1000, 700, 1, "  FAIL  row_count_bounds  (700 rows, reference 1000)"),
-    (1000, 5000, 0, "  warn  row_count_growth  (5000 rows, reference 1000)"),
+    (1000, 700, 1, "  FAIL  row_count_bounds  (700 rows, reference 1000, bounds (0.8, 3.0))"),
+    (1000, 5000, 0, "  warn  row_count_growth  (5000 rows, reference 1000, bounds (0.8, 3.0))"),
 ])
 def test_row_count_bounds_shrink_fails_growth_warns(tmp_path, monkeypatch, capsys, ref_rows, rows, code, expect):
     ref = _bundle(tmp_path / "ref", "2026-10-01", {"geography.unit": GEO.format(n=ref_rows),
@@ -210,42 +162,23 @@ def test_row_count_bounds_shrink_fails_growth_warns(tmp_path, monkeypatch, capsy
     assert expect in capsys.readouterr().out
 
 
-def _serve(monkeypatch, status, body):
-    def urlopen(url):
-        if status == "urlerror":
-            raise urllib.error.URLError("unreachable")
-        if status != 200:
-            raise urllib.error.HTTPError(url, status, "x", {}, None)
-        return io.BytesIO(body)
-
-    monkeypatch.setattr(gate.urllib.request, "urlopen", urlopen)
-
-
-@pytest.mark.parametrize("status, body", [
-    (200, b'["not", "a", "manifest"]'), (200, b'{"release": "2026-10-01"}'), (200, b"<html>"),
-    (500, b""), ("urlerror", b"")])
-def test_an_unreadable_reference_fails_closed(tmp_path, monkeypatch, capsys, status, body):
-    _serve(monkeypatch, status, body)
-    bundle = candidate(tmp_path)
-    assert _run(monkeypatch, str(bundle), "--reference", "http://ref.example/latest") == 1
-    assert "no readable manifest.json" in capsys.readouterr().out
-    assert not (bundle / gate.GATE_FILE).exists()
-
-
 def test_the_reference_is_fetched_with_our_own_user_agent(tmp_path, monkeypatch, capsys):
     """Cloudflare refuses urllib's default User-Agent (HTTP 403, error 1010) on the data host;
     the 2026-11-03 scheduled release failed at the gate because of it."""
     ref = _bundle(tmp_path / "ref", "2026-10-01", {"geography.unit": GEO.format(n=10),
                                                    "measure.observation": OBSERVATION.format(value="NULL")})
     manifest = (ref / "manifest.json").read_bytes()
+    agents = []
 
     def urlopen(req):
         ua = req.get_header("User-agent") if isinstance(req, urllib.request.Request) else None
+        agents.append(ua)
         if not ua or ua.startswith("Python-urllib"):
             raise urllib.error.HTTPError(str(req), 403, "error code: 1010", {}, None)
         return io.BytesIO(manifest)
 
-    monkeypatch.setattr(gate.urllib.request, "urlopen", urlopen)
+    monkeypatch.setattr(urllib.request, "urlopen", urlopen)
     bundle = _bundle(tmp_path / "candidate", "2026-11-01", {"geography.unit": GEO.format(n=10),
                                                             "measure.observation": OBSERVATION.format(value="NULL")})
     assert _run(monkeypatch, str(bundle), "--reference", "https://basemap.example/data/latest") == 0
+    assert agents == [gate.USER_AGENT]

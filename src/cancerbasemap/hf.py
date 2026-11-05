@@ -1,32 +1,28 @@
 """Hugging Face archive (ADR-0001 § Hugging Face, #174): every gated release bundle pushed to
 hf.co/datasets/seandavis/cancerbasemap as one commit, tagged with its release date `YYYY-MM-DD`.
 
-Ported from biocOnIce's hf.py. The bundle is the local directory `cancerbasemap publish` wrote
-and `cancerbasemap gate` passed (its gate.json matches its manifest.json, and each Parquet file
-its manifest sha256). It pushes the Parquet, manifest.json and gate.json as they are, and
-generates views.sql and restore.sql over paths relative to the download directory, and
-README.md, the dataset card. It does not push cancerbasemap.duckdb, whose views read R2.
-Nothing points at `hf://`: anonymous reads there are rate-limited (HTTP 429).
-If the tag exists with the same manifest.json, the push does nothing, so a re-fired timer is
-harmless; with a different one it fails. Tags are never deleted. DOIs are not minted.
+The mechanics are `cdsci.publish.hf`, shared with biocOnIce (cdsci-lake ADR-0027): one commit
+of the Parquet, manifest.json and gate.json as they are, views.sql and restore.sql over paths
+relative to the download directory, and README.md, the dataset card; cancerbasemap.duckdb
+(whose views read R2) is not pushed, and nothing points at `hf://` (anonymous reads there are
+rate-limited, HTTP 429). If the tag exists with the same manifest.json the push does nothing,
+so a re-fired timer is harmless; with a different one it fails. Tags are never deleted.
+
+This module is the cancer policy: the repo, the tag (the release date), the card, the token
+from GSM, and that only a bundle whose gate.json certifies its manifest.json is pushed. DOIs
+are not minted.
 """
 
-import hashlib
 import json
 import os
-import time
 import subprocess
 from datetime import date
 from pathlib import Path
 
-from cdsci.publish import restore_sql, views_sql
-from huggingface_hub import CommitOperationAdd, CommitOperationDelete
-from huggingface_hub.errors import HfHubHTTPError, RepositoryNotFoundError
-
-from .gate import GATE_FILE
+import cdsci.publish.hf
+from cdsci.publish.gate import GATE_FILE, check_proof
 
 REPO = "seandavis/cancerbasemap"
-TAG_ATTEMPTS, TAG_WAIT_S = 5, 10
 TOKEN_SECRET = "cdsci-huggingface-token"
 TOKEN_PROJECT = "cdsci-infra"
 CODE_URL = "https://github.com/seandavi/cancer-basemap"
@@ -171,72 +167,9 @@ def hf_push(release: Path, api, repo=REPO, apply=False):
     """Push the gated bundle `release` to `repo` as one commit tagged with its release date.
     Dry run unless `apply`: the plan is printed, and nothing is created or written on
     Hugging Face."""
-    manifest_bytes = (release / "manifest.json").read_bytes()
-    manifest = json.loads(manifest_bytes)
-    tag = date.fromisoformat(manifest["release"]).isoformat()
-    proof = release / GATE_FILE
-    if not proof.exists():
-        raise SystemExit(f"{release}: no {GATE_FILE}; only a release that passed "
-                         "`cancerbasemap gate` is pushed")
-    gate = json.loads(proof.read_text())
-    if gate.get("manifest_sha256") != hashlib.sha256(manifest_bytes).hexdigest():
-        raise SystemExit(f"{release}/{GATE_FILE} is for another manifest.json; "
-                         "re-run `cancerbasemap gate` on this bundle")
-    if apply:
-        api.create_repo(repo, repo_type="dataset", private=False, exist_ok=True)
-    try:
-        tags = {t.name for t in api.list_repo_refs(repo, repo_type="dataset").tags}
-        remote = api.list_repo_files(repo, repo_type="dataset")
-    except RepositoryNotFoundError:  # a dry run before the first push
-        tags, remote = set(), []
-    if tag in tags:
-        pushed = Path(api.hf_hub_download(repo, "manifest.json", repo_type="dataset", revision=tag))
-        if pushed.read_bytes() != manifest_bytes:
-            raise SystemExit(f"{repo}@{tag} exists with a different manifest.json; a release "
-                             "is never replaced: publish the changes as the next release")
-        print(f"{repo}@{tag} already exists with this manifest.json; nothing to do")
-        return
-    # gate.json binds manifest.json, not the Parquet: re-hash every file against its manifest
-    # sha256, streamed.
-    for t in manifest["tables"]:
-        with (release / t["path"]).open("rb") as f:
-            if hashlib.file_digest(f, "sha256").hexdigest() != t["sha256"]:
-                raise SystemExit(f"{release}/{t['path']} does not match its manifest.json "
-                                 "sha256; re-publish and re-gate this bundle")
-
-    tables = [{**t, "bytes": (release / t["path"]).stat().st_size} for t in manifest["tables"]]
-    generated = {
-        "views.sql": views_sql(tables, "."),
-        "restore.sql": restore_sql(tables, "."),
-        "README.md": build_card(tag, manifest, gate, tables, repo),
-    }
-    files = [t["path"] for t in tables] + ["manifest.json", GATE_FILE]
-    # create_commit, not upload_folder: with hf_xet installed, upload_folder splits a large
-    # upload into several commits; a release is exactly one. Remote files not in this
-    # release leave main (they stay reachable at older tags).
-    ops = [CommitOperationAdd(p, release / p) for p in files]
-    ops += [CommitOperationAdd(p, text.encode()) for p, text in generated.items()]
-    keep = {*files, *generated}
-    deletes = [CommitOperationDelete(p) for p in remote if p not in keep and p != ".gitattributes"]
-    for p in files:
-        print(f"put    {p}  ({(release / p).stat().st_size:,} bytes)", flush=True)
-    for p, text in generated.items():
-        print(f"put    {p}  (generated, {len(text.encode()):,} bytes)", flush=True)
-    for d in deletes:
-        print(f"delete {d.path_in_repo}", flush=True)
-    message = f"Cancer Basemap release {tag}"
-    if not apply:
-        print(f"dry run: would push {repo}@{tag}; nothing written; --apply to push")
-        return
-    commit = api.create_commit(repo, ops + deletes, repo_type="dataset", commit_message=message)
-    # The Hub can answer 409 Conflict to a tag on a commit it made a moment ago (the
-    # 2026-11-03 scheduled release failed here; the same call succeeded a minute later).
-    for attempt in range(TAG_ATTEMPTS):
-        try:
-            api.create_tag(repo, repo_type="dataset", tag=tag, revision=commit.oid, tag_message=message)
-            break
-        except HfHubHTTPError as e:
-            if getattr(e.response, "status_code", None) != 409 or attempt == TAG_ATTEMPTS - 1:
-                raise
-            time.sleep(TAG_WAIT_S * (attempt + 1))
-    print(f"pushed {repo}@{tag} ({commit.oid})")
+    gate = check_proof(release)
+    tag = date.fromisoformat(json.loads((release / "manifest.json").read_text())["release"]).isoformat()
+    cdsci.publish.hf.hf_push(
+        release, api, repo=repo, tag=tag, apply=apply, extra_files=(GATE_FILE,),
+        card=lambda tag, manifest, tables: build_card(tag, manifest, gate, tables, repo),
+        message=f"Cancer Basemap release {tag}")

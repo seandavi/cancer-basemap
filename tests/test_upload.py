@@ -1,4 +1,10 @@
-"""`cancerbasemap upload`: a gated bundle into a local directory standing in for the R2 bucket, offline (#173)."""
+"""`cancerbasemap upload`: the cancer policy on top of cdsci.publish.upload, into a local
+directory standing in for the R2 bucket, offline (#173).
+
+The mechanics (folder layout, interrupted uploads, sha256 re-hash, pruning) and `keep_monthly`
+are tested in cdsci-lake; this covers the pre-upload checks (gate proof, Hugging Face tag), the
+bucket parameters, the retention rule as configured, and the credentials.
+"""
 
 import hashlib
 import json
@@ -73,17 +79,6 @@ def test_each_folder_reads_its_own_parquet_with_gate_json_and_manifest_last(tmp_
     assert all("/latest/" not in p for p in puts[:6]) and all("/latest/" in p for p in puts[6:])
 
 
-def test_dry_run_writes_nothing_and_lists_puts_and_deletes(tmp_path, capsys):
-    bucket, bundle = _bucket(tmp_path), _bundle(tmp_path)
-    before = _snapshot(bucket)
-    upload.upload(bundle, BUCKET_FS, str(bucket), today=TODAY, get_hf_manifest=on_hf(bundle))
-
-    assert _snapshot(bucket) == before
-    out = capsys.readouterr().out
-    assert out.count("put ") == 12  # 6 files x (dated, latest)
-    assert "dry run" in out
-
-
 def test_a_bundle_without_a_matching_gate_json_is_refused_before_the_bucket(tmp_path, capsys):
     bucket = _bucket(tmp_path)
     before = _snapshot(bucket)
@@ -116,39 +111,6 @@ def test_a_bundle_not_at_its_hugging_face_tag_is_refused(tmp_path, capsys):
     assert _snapshot(bucket) == before and capsys.readouterr().out == ""
 
 
-def test_a_completed_dated_release_of_other_files_is_never_overwritten(tmp_path):
-    bucket, bundle = _bucket(tmp_path), _bundle(tmp_path)
-    (bucket / f"v{RELEASE}").mkdir()
-    other = {"release": RELEASE, "tables": [{"path": "annotation/gene.parquet", "sha256": "other"}]}
-    (bucket / f"v{RELEASE}" / "manifest.json").write_text(json.dumps(other))
-    with pytest.raises(SystemExit, match="completed release of other files"):
-        upload.upload(bundle, BUCKET_FS, str(bucket), apply=True, today=TODAY, get_hf_manifest=on_hf(bundle))
-    assert json.loads((bucket / f"v{RELEASE}" / "manifest.json").read_text()) == other
-    assert not (bucket / "latest" / "views.sql").exists()
-
-
-def test_an_interrupted_latest_upload_is_finished(tmp_path, capsys, monkeypatch):
-    bucket, bundle = _bucket(tmp_path), _bundle(tmp_path)
-    real = upload._folder
-
-    def fail_on_latest(fs, root, bundle, manifest, folder, apply):
-        if folder == "latest":
-            raise OSError("connection reset")
-        real(fs, root, bundle, manifest, folder, apply)
-    monkeypatch.setattr(upload, "_folder", fail_on_latest)
-    with pytest.raises(OSError):
-        upload.upload(bundle, BUCKET_FS, str(bucket), apply=True, today=TODAY, get_hf_manifest=on_hf(bundle))
-    monkeypatch.setattr(upload, "_folder", real)
-    dated = (bucket / f"v{RELEASE}" / "manifest.json").read_text()
-    capsys.readouterr()
-
-    upload.upload(bundle, BUCKET_FS, str(bucket), apply=True, today=TODAY, get_hf_manifest=on_hf(bundle))
-    assert (bucket / f"v{RELEASE}" / "manifest.json").read_text() == dated
-    assert json.loads((bucket / "latest" / "manifest.json").read_text())["release"] == RELEASE
-    assert f"/v{RELEASE}/" not in "".join(ln for ln in capsys.readouterr().out.splitlines()
-                                           if ln.startswith("put"))
-
-
 def test_prune_follows_the_retention_rule_and_leaves_latest_and_non_dates(tmp_path):
     bucket, bundle = _bucket(tmp_path), _bundle(tmp_path)
     for d in ("v2025-10-15", "v2025-10-20"):  # a month's release and its correction, long past
@@ -158,96 +120,6 @@ def test_prune_follows_the_retention_rule_and_leaves_latest_and_non_dates(tmp_pa
     assert sorted(p.name for p in bucket.iterdir()) == [
         "latest", "v2025-10-20", "v2026-09-01", "v2026-10-04", "v2026-10-29",
         f"v{RELEASE}", "vnotadate"]  # 10-04: its successor 10-29 is 3 days old
-
-
-def _keep(names, current, today):
-    return upload.select_keep(names, current, date.fromisoformat(today))
-
-
-def test_select_keep_newest_of_each_month_and_a_month_with_no_release_is_skipped():
-    # no April, no May: the window still reaches back 12 months that have a release
-    names = ["v2026-01-10", "v2026-01-20", "v2026-03-05", "v2026-06-30"]
-    assert _keep(names, "v2026-06-30", "2026-07-30") == {"v2026-01-20", "v2026-03-05", "v2026-06-30"}
-
-
-def test_select_keep_two_corrections_in_one_month_keep_only_the_newest_once_grace_has_passed():
-    names = ["v2026-05-01", "v2026-05-10", "v2026-05-20"]
-    assert _keep(names, "v2026-05-20", "2026-06-20") == {"v2026-05-20"}
-
-
-@pytest.mark.parametrize("today, kept", [
-    ("2026-05-16", {"v2026-05-01", "v2026-05-10"}),  # successor 6 days old: pinned release stays
-    ("2026-05-17", {"v2026-05-10"}),  # successor 7 days old: it goes
-])
-def test_select_keep_successor_six_vs_seven_days_old(today, kept):
-    assert _keep(["v2026-05-01", "v2026-05-10"], "v2026-05-10", today) == kept
-
-
-def test_select_keep_grace_chains_through_corrections():
-    # 05-12 replaced 05-10 4 days ago; 05-10 replaced 05-01 2 days before that: all three held
-    assert _keep(["v2026-05-01", "v2026-05-10", "v2026-05-12"], "v2026-05-12", "2026-05-16") == {
-        "v2026-05-01", "v2026-05-10", "v2026-05-12"}
-
-
-def test_select_keep_year_boundary_counts_calendar_months():
-    names = ["v2025-12-31", "v2026-01-01", "v2026-02-01"]
-    assert _keep(names, "v2026-02-01", "2026-03-01") == set(names)  # Dec and Jan are different months
-
-
-def test_select_keep_thirteen_months_prunes_the_oldest():
-    names = [f"v2025-{m:02d}-01" for m in range(10, 13)] + [f"v2026-{m:02d}-01" for m in range(1, 11)]
-    keep = _keep(names, "v2026-10-01", "2026-10-01")
-    assert len(names) == 13 and keep == set(names) - {"v2025-10-01"}
-
-
-def test_select_keep_never_prunes_the_folder_being_uploaded_even_if_older():
-    names = ["v2026-05-01", "v2026-06-01"]
-    assert "v2026-05-01" in _keep(names, "v2026-05-01", "2027-06-01")
-
-
-def test_select_keep_ignores_names_that_are_not_real_dates():
-    names = ["v2026-02-30", "vnotadate", "latest", "v2026-05-01"]
-    assert _keep(names, "v2026-05-01", "2026-06-01") == {"v2026-05-01"}
-
-
-def test_a_changed_parquet_under_an_unchanged_manifest_and_gate_is_refused_before_the_bucket(tmp_path, capsys):
-    bucket, bundle = _bucket(tmp_path), _bundle(tmp_path)
-    before = _snapshot(bucket)
-    duckdb.sql(f"COPY (SELECT 2 AS gene_id) TO '{bundle}/annotation/gene.parquet' (FORMAT parquet)")
-    with pytest.raises(SystemExit, match="annotation/gene.parquet does not match its manifest.json sha256"):
-        upload.upload(bundle, BUCKET_FS, str(bucket), apply=True, today=TODAY, get_hf_manifest=on_hf(bundle))
-    assert _snapshot(bucket) == before and capsys.readouterr().out == ""
-
-
-def test_latest_loses_its_manifest_before_any_overwrite_so_an_interrupted_replacement_is_incomplete(
-        tmp_path, monkeypatch):
-    bucket, bundle = _bucket(tmp_path), _bundle(tmp_path)
-    assert (bucket / "latest" / "manifest.json").exists()
-    real = upload._put
-    puts = []
-
-    def fail_after_first_latest_put(fs, local, key, apply, attempts=3):
-        real(fs, local, key, apply, attempts)
-        if "/latest/" in key:
-            puts.append(key)
-            raise OSError("connection reset")
-    monkeypatch.setattr(upload, "_put", fail_after_first_latest_put)
-    with pytest.raises(OSError):
-        upload.upload(bundle, BUCKET_FS, str(bucket), apply=True, today=TODAY, get_hf_manifest=on_hf(bundle))
-    assert puts == [f"{bucket}/latest/annotation/gene.parquet"]
-    assert (bucket / "latest" / "annotation/gene.parquet").exists()
-    assert not (bucket / "latest" / "manifest.json").exists()
-
-
-def test_an_incomplete_dated_folder_never_displaces_a_complete_one(tmp_path):
-    bucket, bundle = tmp_path / "bucket", _bundle(tmp_path, release="2026-06-01")
-    for d, complete in (("v2026-05-01", True), ("v2026-05-20", False)):
-        (bucket / d).mkdir(parents=True)
-        if complete:
-            (bucket / d / "manifest.json").write_text("{}")
-    upload.upload(bundle, BUCKET_FS, str(bucket), apply=True, today=date(2026, 6, 20),
-                  get_hf_manifest=on_hf(bundle))
-    assert sorted(p.name for p in bucket.iterdir()) == ["latest", "v2026-05-01", "v2026-06-01"]
 
 
 def test_r2_credentials_come_from_env_else_gcloud_and_are_never_printed(monkeypatch, capsys):
